@@ -1,0 +1,80 @@
+[
+	{
+		"name": "RWD SPORT",
+		"values": {
+			"aero_drag": 0.43,
+			"base_tyre_mu": 1.12,
+			"cg_height": 0.52,
+			"corner_stiffness": 3400.0,
+			"drive_front_fraction": 0.0,
+			"front_brake_bias": 0.62,
+			"front_weight_fraction": 0.55,
+			"handbrake_force": 5600.0,
+			"handbrake_grip_scale": 0.54,
+			"inertia": 1850.0,
+			"mass": 1240.0,
+			"max_brake_force": 15500.0,
+			"max_engine_force": 7200.0,
+			"max_steer_high": 0.18,
+			"max_steer_low": 0.58,
+			"reverse_force": 4200.0,
+			"rolling_resistance": 145.0,
+			"steering_rate": 2.8,
+			"track_width": 1.58,
+			"wheelbase": 2.55,
+			"yaw_damping": 850.0
+		}
+	},
+	{
+		"name": "FWD HATCH",
+		"values": {
+			"aero_drag": 0.43,
+			"base_tyre_mu": 1.05,
+			"cg_height": 0.56,
+			"corner_stiffness": 3250.0,
+			"drive_front_fraction": 1.0,
+			"front_brake_bias": 0.67,
+			"front_weight_fraction": 0.62,
+			"handbrake_force": 5600.0,
+			"handbrake_grip_scale": 0.54,
+			"inertia": 1580.0,
+			"mass": 1120.0,
+			"max_brake_force": 14800.0,
+			"max_engine_force": 6100.0,
+			"max_steer_high": 0.18,
+			"max_steer_low": 0.58,
+			"reverse_force": 4200.0,
+			"rolling_resistance": 145.0,
+			"steering_rate": 2.8,
+			"track_width": 1.54,
+			"wheelbase": 2.45,
+			"yaw_damping": 980.0
+		}
+	},
+	{
+		"name": "AWD RALLY",
+		"values": {
+			"aero_drag": 0.43,
+			"base_tyre_mu": 1.08,
+			"cg_height": 0.58,
+			"corner_stiffness": 3350.0,
+			"drive_front_fraction": 0.48,
+			"front_brake_bias": 0.6,
+			"front_weight_fraction": 0.54,
+			"handbrake_force": 5600.0,
+			"handbrake_grip_scale": 0.54,
+			"inertia": 1980.0,
+			"mass": 1320.0,
+			"max_brake_force": 15800.0,
+			"max_engine_force": 7800.0,
+			"max_steer_high": 0.18,
+			"max_steer_low": 0.58,
+			"reverse_force": 4200.0,
+			"rolling_resistance": 145.0,
+			"steering_rate": 2.8,
+			"track_width": 1.61,
+			"wheelbase": 2.58,
+			"yaw_damping": 790.0
+		}
+	}
+]

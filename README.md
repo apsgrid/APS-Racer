@@ -40,6 +40,22 @@ These use the same physics code with different vehicle parameters and drivetrain
 - Tyre smoke when rear tyres exceed the slip/grip threshold
 - Speed-dependent camera zoom and look-ahead
 
+### Handling Lab
+
+Press **T** or **F1**, or tap **TUNE**, to open the in-game Handling Lab.
+
+The panel applies changes live and exposes 21 vehicle parameters, including mass, yaw inertia, wheelbase, track width, CG height, weight distribution, drivetrain split, engine/brake forces, tyre grip, corner stiffness, yaw damping, drag, steering locks/rate and handbrake behaviour.
+
+Named tunes are persisted to `user://aps_racer_handling_presets.json` and can be saved, loaded and deleted in-game.
+
+**RESET TO BAKED** restores the current car from `vehicle_presets.json`.
+
+**BAKE CURRENT** writes the current setup back into the selected car slot in `vehicle_presets.json` when running from the Godot development/editor build. Exported builds are read-only, so they save a bake candidate and copy the values instead.
+
+The intended development loop is:
+
+    drive -> tune -> save variants -> compare -> bake winner -> keep building
+
 ### Controls
 
 Keyboard:

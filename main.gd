@@ -17,10 +17,15 @@ var has_previous_rear: bool = false
 var smoke_positions: Array[Vector2] = []
 var smoke_life: Array[float] = []
 var smoke_spawn_cooldown: float = 0.0
+var tuning_panel: TuningPanel
 
 func _ready() -> void:
 	sim.set_preset(0)
 	camera_world = sim.position
+	tuning_panel = TuningPanel.new()
+	add_child(tuning_panel)
+	tuning_panel.setup(sim)
+	tuning_panel.car_selected.connect(_on_tuning_car_selected)
 	set_process_input(true)
 	queue_redraw()
 
@@ -92,6 +97,9 @@ func _update_smoke(delta: float) -> void:
 			smoke_positions.remove_at(i)
 
 func _read_controls() -> Dictionary:
+	if tuning_panel != null and tuning_panel.is_open():
+		return {"steer": 0.0, "throttle": 0.0, "brake": 0.0, "handbrake": false}
+
 	var steer: float = 0.0
 	var throttle: float = 0.0
 	var brake: float = 0.0
@@ -149,6 +157,17 @@ func _read_controls() -> Dictionary:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_T or event.keycode == KEY_F1:
+			tuning_panel.toggle()
+			return
+		elif event.keycode == KEY_ESCAPE and tuning_panel.is_open():
+			tuning_panel.set_open(false)
+			return
+
+	if tuning_panel != null and tuning_panel.is_open():
+		return
+
+	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_R:
 			_reset_car()
 		elif event.keycode == KEY_1:
@@ -172,6 +191,8 @@ func _input(event: InputEvent) -> void:
 				_reset_car()
 			elif Rect2(rects["preset"]).has_point(event.position):
 				_select_preset(sim.preset_index + 1)
+			elif Rect2(rects["tune"]).has_point(event.position):
+				tuning_panel.set_open(true)
 		else:
 			touches.erase(event.index)
 
@@ -190,6 +211,11 @@ func _select_preset(index: int) -> void:
 	skid_points.clear()
 	smoke_positions.clear()
 	smoke_life.clear()
+	if tuning_panel != null:
+		tuning_panel.sync_from_sim()
+
+func _on_tuning_car_selected(index: int) -> void:
+	_select_preset(index)
 
 func _touch_active(control_name: String) -> bool:
 	var rects: Dictionary = _control_rects()
@@ -209,6 +235,7 @@ func _control_rects() -> Dictionary:
 		"brake": Rect2(Vector2(view.x - 280.0, view.y - 146.0), button),
 		"throttle": Rect2(Vector2(view.x - 152.0, view.y - 146.0), button),
 		"handbrake": Rect2(Vector2(view.x - 216.0, view.y - 274.0), Vector2(150.0, 92.0)),
+		"tune": Rect2(Vector2(view.x - 356.0, 20.0), Vector2(108.0, 54.0)),
 		"preset": Rect2(Vector2(view.x - 236.0, 20.0), Vector2(108.0, 54.0)),
 		"reset": Rect2(Vector2(view.x - 116.0, 20.0), Vector2(92.0, 54.0))
 	}
@@ -346,7 +373,7 @@ func _draw_telemetry() -> void:
 		"Surface: " + surface_name,
 		"Impact: %4.0f km/h" % sim.last_impact_kph,
 		"Gamepad: " + joy_name,
-		"1/2/3 cars | WASD/arrows | Space handbrake | R reset"
+		"1/2/3 cars | WASD/arrows | Space handbrake | R reset | T tune"
 	]
 	var font: Font = ThemeDB.fallback_font
 	for i: int in range(lines.size()):
@@ -360,6 +387,7 @@ func _draw_touch_controls() -> void:
 	_draw_touch_button(Rect2(rects["brake"]), "BRAKE", _touch_active("brake"))
 	_draw_touch_button(Rect2(rects["throttle"]), "GO", _touch_active("throttle"))
 	_draw_touch_button(Rect2(rects["handbrake"]), "HANDBRAKE", _touch_active("handbrake"))
+	_draw_touch_button(Rect2(rects["tune"]), "TUNE", tuning_panel != null and tuning_panel.is_open())
 	_draw_touch_button(Rect2(rects["preset"]), "CAR", false)
 	_draw_touch_button(Rect2(rects["reset"]), "RESET", false)
 
