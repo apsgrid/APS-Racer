@@ -630,3 +630,148 @@ func _closed(points: PackedVector2Array) -> PackedVector2Array:
 	if not result.is_empty():
 		result.append(result[0])
 	return result
+func draw_race_guidance(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	track: TrackModel,
+	race: RaceSystem,
+	world_to_screen: Callable,
+	ppm: float,
+	visual_time: float
+) -> void:
+	var gates: Array[Dictionary] = track.race_gates()
+	if gates.is_empty():
+		return
+
+	for i: int in range(gates.size()):
+		var gate: Dictionary = gates[i]
+		var a: Vector2 = world_to_screen.call(Vector2(gate["a"]))
+		var b: Vector2 = world_to_screen.call(Vector2(gate["b"]))
+		var active: bool = i == race.next_checkpoint and race.state == "racing"
+		var colour: Color = theme.colour("accent2" if active else "ui_muted")
+		colour.a = 0.92 if active else 0.18
+		var width: float = max(2.0, ppm * (0.10 if active else 0.045))
+		if active:
+			var glow: Color = colour
+			glow.a = 0.13 + 0.05 * sin(visual_time * 5.0)
+			canvas.draw_line(a, b, glow, max(9.0, ppm * 0.42), true)
+		canvas.draw_line(a, b, colour, width, true)
+
+	if race.state == "racing":
+		var active_gate: Dictionary = gates[race.next_checkpoint]
+		var centre: Vector2 = world_to_screen.call(Vector2(active_gate["position"]))
+		var pulse: float = 12.0 + sin(visual_time * 4.5) * 3.0
+		var ring: Color = theme.colour("accent2")
+		ring.a = 0.72
+		canvas.draw_arc(centre, max(15.0, ppm * 0.45 + pulse), 0, TAU, 40, ring, 2.0, true)
+
+func draw_ghost_car(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	ghost: Dictionary,
+	world_to_screen: Callable,
+	ppm: float
+) -> void:
+	if ghost.is_empty():
+		return
+	var position: Vector2 = Vector2(ghost.get("position", Vector2.ZERO))
+	var angle: float = float(ghost.get("angle", 0.0))
+	var shape: Array[Vector2] = [
+		Vector2(2.25, -0.72), Vector2(2.05, -0.91), Vector2(-1.85, -0.91),
+		Vector2(-2.18, -0.66), Vector2(-2.18, 0.66), Vector2(-1.85, 0.91),
+		Vector2(2.05, 0.91), Vector2(2.25, 0.72)
+	]
+	var points: PackedVector2Array = PackedVector2Array()
+	for local: Vector2 in shape:
+		points.append(world_to_screen.call(position + local.rotated(angle)))
+	var fill: Color = theme.colour("accent")
+	fill.a = 0.16
+	var edge: Color = theme.colour("accent")
+	edge.a = 0.52
+	canvas.draw_colored_polygon(points, fill)
+	canvas.draw_polyline(_closed(points), edge, max(1.5, ppm * 0.055), true)
+
+	var nose: Vector2 = world_to_screen.call(position + Vector2(2.15, 0.0).rotated(angle))
+	canvas.draw_circle(nose, max(2.0, ppm * 0.07), edge)
+
+func draw_race_hud(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	race: RaceSystem,
+	position_rank: int,
+	ai_race: RaceSystem
+) -> void:
+	var font: Font = ThemeDB.fallback_font
+	var bg: Color = theme.colour("ui_panel")
+	bg.a = 0.90
+	var border: Color = theme.colour("accent2")
+	border.a = 0.62
+	var text: Color = theme.colour("ui_text")
+	var muted: Color = theme.colour("ui_muted")
+	var accent: Color = theme.colour("accent2")
+
+	var rect: Rect2 = Rect2(430, 18, 332, 142)
+	_draw_panel(canvas, rect, bg, border, 10, 2)
+
+	canvas.draw_string(font, Vector2(448, 45), "P%d / 2" % position_rank, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, accent)
+	canvas.draw_string(font, Vector2(544, 45), "LAP %d / %d" % [min(race.current_lap, race.total_laps), race.total_laps], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text)
+
+	var lap_value: String = race.format_time(race.lap_elapsed) if race.state != "countdown" else "--:--.---"
+	canvas.draw_string(font, Vector2(448, 78), lap_value, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, text)
+
+	canvas.draw_string(font, Vector2(448, 102), "BEST  " + race.format_time(race.best_lap_time), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, muted)
+	canvas.draw_string(font, Vector2(448, 122), "LAST  " + race.format_time(race.last_lap_time), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, muted)
+
+	var ghost_text: String = "GHOST ON" if race.best_ghost.size() > 1 else "NO GHOST YET"
+	canvas.draw_string(font, Vector2(638, 102), ghost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, theme.colour("accent"))
+
+	var sector_number: int = 4 if race.next_checkpoint == 0 else race.next_checkpoint
+	canvas.draw_string(font, Vector2(638, 122), "S%d  %s" % [sector_number, race.format_time(race.last_sector_time)], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, muted)
+	var rival_lap: int = min(ai_race.current_lap, ai_race.total_laps)
+	canvas.draw_string(font, Vector2(638, 138), "RIVAL L%d" % rival_lap, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, muted)
+
+	if race.state == "countdown":
+		var label: String = race.countdown_text()
+		var size: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 88)
+		var centre: Vector2 = canvas.get_viewport_rect().size * 0.5
+		var shadow: Color = Color(0, 0, 0, 0.55)
+		canvas.draw_string(font, centre + Vector2(-size.x * 0.5 + 4, size.y * 0.3 + 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 88, shadow)
+		canvas.draw_string(font, centre + Vector2(-size.x * 0.5, size.y * 0.3), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 88, accent)
+	elif race.event_message_time > 0.0 and not race.event_message.is_empty():
+		var label2: String = race.event_message
+		var size2: Vector2 = font.get_string_size(label2, HORIZONTAL_ALIGNMENT_LEFT, -1, 24)
+		var centre2: Vector2 = Vector2(canvas.get_viewport_rect().size.x * 0.5, 180)
+		var msg_bg: Color = theme.colour("ui_panel")
+		msg_bg.a = 0.88
+		var msg_rect: Rect2 = Rect2(centre2 - Vector2(size2.x * 0.5 + 18, 24), Vector2(size2.x + 36, 46))
+		_draw_panel(canvas, msg_rect, msg_bg, Color(accent, 0.70), 8, 1)
+		canvas.draw_string(font, centre2 + Vector2(-size2.x * 0.5, 8), label2, HORIZONTAL_ALIGNMENT_LEFT, -1, 24, text)
+
+	if race.state == "finished":
+		var finish: String = "FINISHED  P%d" % position_rank
+		var finish_size: Vector2 = font.get_string_size(finish, HORIZONTAL_ALIGNMENT_LEFT, -1, 42)
+		var centre3: Vector2 = canvas.get_viewport_rect().size * 0.5
+		var finish_rect: Rect2 = Rect2(centre3.x - finish_size.x * 0.5 - 28, centre3.y - 52, finish_size.x + 56, 88)
+		_draw_panel(canvas, finish_rect, Color(theme.colour("ui_bg"), 0.95), Color(accent, 0.95), 12, 2)
+		canvas.draw_string(font, Vector2(centre3.x - finish_size.x * 0.5, centre3.y + 8), finish, HORIZONTAL_ALIGNMENT_LEFT, -1, 42, text)
+func draw_rival_marker(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	position: Vector2,
+	world_to_screen: Callable,
+	ppm: float
+) -> void:
+	var centre: Vector2 = world_to_screen.call(position)
+	var y_offset: float = max(22.0, ppm * 1.35)
+	var tip: Vector2 = centre + Vector2(0, -y_offset + 12)
+	var marker: Color = theme.colour("danger")
+	var tri: PackedVector2Array = PackedVector2Array([
+		tip,
+		tip + Vector2(-6, -10),
+		tip + Vector2(6, -10)
+	])
+	canvas.draw_colored_polygon(tri, marker)
+	var font: Font = ThemeDB.fallback_font
+	var label: String = "RIVAL"
+	var size: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10)
+	canvas.draw_string(font, tip + Vector2(-size.x * 0.5, -14), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, marker)

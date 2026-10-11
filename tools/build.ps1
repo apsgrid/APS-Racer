@@ -17,6 +17,9 @@ $BuildAndroid = (-not $OnlyMode) -or $AndroidOnly
 if (-not $SkipTests) {
     & $Godot --headless --path $Project --script res://handling_tests.gd
     if ($LASTEXITCODE -ne 0) { throw "Handling tests failed." }
+
+    & $Godot --headless --path $Project --script res://race_tests.gd
+    if ($LASTEXITCODE -ne 0) { throw "Race tests failed." }
 }
 
 if ($BuildWeb) {

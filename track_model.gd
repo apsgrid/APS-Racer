@@ -98,3 +98,57 @@ func barrier_outer_points() -> PackedVector2Array:
 
 func barrier_inner_points() -> PackedVector2Array:
 	return rounded_rect_points(BARRIER_INNER_HALF, BARRIER_INNER_RADIUS, 12)
+
+func race_gates() -> Array[Dictionary]:
+	return [
+		{
+			"name":"START / FINISH",
+			"position":Vector2(0.0, 16.0),
+			"radius":4.5,
+			"direction":Vector2(1.0, 0.0),
+			"a":Vector2(0.0, 12.2),
+			"b":Vector2(0.0, 19.8)
+		},
+		{
+			"name":"EAST",
+			"position":Vector2(30.0, 0.0),
+			"radius":5.0,
+			"direction":Vector2(0.0, -1.0),
+			"a":Vector2(26.2, 0.0),
+			"b":Vector2(33.8, 0.0)
+		},
+		{
+			"name":"BACK STRAIGHT",
+			"position":Vector2(0.0, -16.0),
+			"radius":4.5,
+			"direction":Vector2(-1.0, 0.0),
+			"a":Vector2(0.0, -19.8),
+			"b":Vector2(0.0, -12.2)
+		},
+		{
+			"name":"WEST",
+			"position":Vector2(-30.0, 0.0),
+			"radius":5.0,
+			"direction":Vector2(0.0, 1.0),
+			"a":Vector2(-33.8, 0.0),
+			"b":Vector2(-26.2, 0.0)
+		}
+	]
+
+func racing_line_points() -> Array[Vector2]:
+	return [
+		Vector2(0.0, 16.0),
+		Vector2(18.0, 16.0),
+		Vector2(26.0, 13.5),
+		Vector2(30.5, 7.0),
+		Vector2(30.5, -7.0),
+		Vector2(26.0, -13.5),
+		Vector2(18.0, -16.0),
+		Vector2(0.0, -16.0),
+		Vector2(-18.0, -16.0),
+		Vector2(-26.0, -13.5),
+		Vector2(-30.5, -7.0),
+		Vector2(-30.5, 7.0),
+		Vector2(-26.0, 13.5),
+		Vector2(-18.0, 16.0)
+	]

@@ -8,6 +8,9 @@ var sim: VehicleSim = VehicleSim.new()
 var track: TrackModel = TrackModel.new()
 var themes: ThemeSystem = ThemeSystem.new()
 var visuals: VisualRenderer = VisualRenderer.new()
+var race: RaceSystem = RaceSystem.new(true)
+var ai_driver: AIDriver = AIDriver.new()
+var ai_race: RaceSystem = RaceSystem.new(false)
 var accumulator: float = 0.0
 var camera_world: Vector2 = Vector2.ZERO
 var pixels_per_meter: float = 25.0
@@ -25,34 +28,51 @@ var tuning_panel: TuningPanel
 
 func _ready() -> void:
 	sim.set_preset(0)
+	ai_driver.setup()
 	camera_world = sim.position
 	tuning_panel = TuningPanel.new()
 	add_child(tuning_panel)
 	tuning_panel.setup(sim)
 	tuning_panel.car_selected.connect(_on_tuning_car_selected)
 	_apply_theme()
+	_start_event()
 	set_process_input(true)
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
 	visual_time += delta
+	var panel_open: bool = tuning_panel != null and tuning_panel.is_open()
+	race.set_paused(panel_open)
+	ai_race.set_paused(panel_open)
 	var controls: Dictionary = _read_controls()
 	accumulator = min(accumulator + delta, 0.25)
+
 	while accumulator >= SIM_DT:
-		sim.step(
-			SIM_DT,
-			float(controls["throttle"]),
-			float(controls["brake"]),
-			float(controls["steer"]),
-			bool(controls["handbrake"]),
-			track.surface_mu
-		)
-		track.resolve_barriers(sim)
-		_record_tyre_effects(SIM_DT)
-		sim.last_impact_kph = move_toward(sim.last_impact_kph, 0.0, SIM_DT * 28.0)
+		if not panel_open:
+			sim.step(
+				SIM_DT,
+				float(controls["throttle"]),
+				float(controls["brake"]),
+				float(controls["steer"]),
+				bool(controls["handbrake"]),
+				track.surface_mu
+			)
+			track.resolve_barriers(sim)
+
+			ai_driver.step(SIM_DT, ai_race.is_racing(), track)
+			_resolve_car_collision()
+
+			race.step(SIM_DT, sim.position, sim.angle, track)
+			ai_race.step(SIM_DT, ai_driver.sim.position, ai_driver.sim.angle, track)
+
+			_record_tyre_effects(SIM_DT)
+			sim.last_impact_kph = move_toward(sim.last_impact_kph, 0.0, SIM_DT * 28.0)
+			ai_driver.sim.last_impact_kph = move_toward(ai_driver.sim.last_impact_kph, 0.0, SIM_DT * 28.0)
 		accumulator -= SIM_DT
 
-	_update_smoke(delta)
+	if not panel_open:
+		_update_smoke(delta)
+
 	var speed: float = sim.velocity.length()
 	var look_ahead: Vector2 = sim.velocity * 0.16
 	var camera_target: Vector2 = sim.position + look_ahead
@@ -107,6 +127,8 @@ func _update_smoke(delta: float) -> void:
 
 func _read_controls() -> Dictionary:
 	if tuning_panel != null and tuning_panel.is_open():
+		return {"steer": 0.0, "throttle": 0.0, "brake": 0.0, "handbrake": false}
+	if race.controls_locked():
 		return {"steer": 0.0, "throttle": 0.0, "brake": 0.0, "handbrake": false}
 
 	var steer: float = 0.0
@@ -221,19 +243,13 @@ func _input(event: InputEvent) -> void:
 		touches[event.index] = event.position
 
 func _reset_car() -> void:
-	sim.reset()
-	camera_world = sim.position
-	has_previous_rear = false
+	_start_event()
 
 func _select_preset(index: int) -> void:
 	sim.set_preset(index)
-	camera_world = sim.position
-	has_previous_rear = false
-	skid_points.clear()
-	smoke_positions.clear()
-	smoke_life.clear()
 	if tuning_panel != null:
 		tuning_panel.sync_from_sim()
+	_start_event()
 
 func _on_tuning_car_selected(index: int) -> void:
 	_select_preset(index)
@@ -241,9 +257,65 @@ func _on_tuning_car_selected(index: int) -> void:
 func _cycle_theme() -> void:
 	themes.cycle(1)
 	_apply_theme()
+	_start_event()
+	queue_redraw()
+
+func _race_key() -> String:
+	return "%s::car_%d" % [themes.id(), sim.preset_index]
+
+func _start_event() -> void:
+	sim.reset()
+	sim.position = Vector2(-3.2, 14.6)
+	sim.angle = 0.0
+	sim.velocity = Vector2.ZERO
+	sim.angular_velocity = 0.0
+
+	ai_driver.restart()
+
+	race.configure(_race_key(), 3)
+	race.restart()
+	ai_race.configure("ai", 3)
+	ai_race.restart()
+
+	camera_world = sim.position
+	accumulator = 0.0
+	has_previous_rear = false
+	skid_points.clear()
 	smoke_positions.clear()
 	smoke_life.clear()
-	queue_redraw()
+	smoke_spawn_cooldown = 0.0
+
+func _resolve_car_collision() -> void:
+	var other: VehicleSim = ai_driver.sim
+	var delta: Vector2 = other.position - sim.position
+	var distance: float = delta.length()
+	var min_distance: float = 2.35
+	if distance <= 0.001 or distance >= min_distance:
+		return
+
+	var normal: Vector2 = delta / distance
+	var penetration: float = min_distance - distance
+	sim.position -= normal * penetration * 0.5
+	other.position += normal * penetration * 0.5
+
+	var relative_velocity: Vector2 = other.velocity - sim.velocity
+	var separating_speed: float = relative_velocity.dot(normal)
+	if separating_speed >= 0.0:
+		return
+
+	var impulse: float = -separating_speed * 0.42
+	sim.velocity -= normal * impulse
+	other.velocity += normal * impulse
+	sim.angular_velocity *= 0.82
+	other.angular_velocity *= 0.82
+	var impact_kph: float = abs(separating_speed) * 3.6
+	sim.last_impact_kph = max(sim.last_impact_kph, impact_kph)
+	other.last_impact_kph = max(other.last_impact_kph, impact_kph)
+
+func _player_position_rank() -> int:
+	var player_score: float = race.progress_score(sim.position, track)
+	var ai_score: float = ai_race.progress_score(ai_driver.sim.position, track)
+	return 1 if player_score >= ai_score else 2
 
 func _apply_theme() -> void:
 	track.set_surface_profile(
@@ -299,6 +371,15 @@ func _draw() -> void:
 		pixels_per_meter,
 		visual_time
 	)
+	visuals.draw_race_guidance(
+		self,
+		themes,
+		track,
+		race,
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter,
+		visual_time
+	)
 	visuals.draw_skid_marks(
 		self,
 		themes,
@@ -311,6 +392,27 @@ func _draw() -> void:
 		themes,
 		smoke_positions,
 		smoke_life,
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter
+	)
+	visuals.draw_ghost_car(
+		self,
+		themes,
+		race.ghost_transform(),
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter
+	)
+	visuals.draw_car(
+		self,
+		themes,
+		ai_driver.sim,
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter
+	)
+	visuals.draw_rival_marker(
+		self,
+		themes,
+		ai_driver.sim.position,
 		Callable(self, "_world_to_screen"),
 		pixels_per_meter
 	)
@@ -332,6 +434,7 @@ func _draw() -> void:
 		joy_name = Input.get_joy_name(joypads[0])
 
 	visuals.draw_hud(self, themes, sim, surface_name, telemetry_open, joy_name)
+	visuals.draw_race_hud(self, themes, race, _player_position_rank(), ai_race)
 
 	var rects: Dictionary = _control_rects()
 	var active: Dictionary = {
