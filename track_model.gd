@@ -12,8 +12,13 @@ const BARRIER_INNER_HALF: Vector2 = Vector2(24.0, 10.0)
 const BARRIER_INNER_RADIUS: float = 4.0
 
 const CAR_COLLISION_RADIUS: float = 1.15
-const ASPHALT_MU: float = 1.0
-const GRASS_MU: float = 0.43
+
+var road_mu: float = 1.0
+var runoff_mu: float = 0.43
+
+func set_surface_profile(next_road_mu: float, next_runoff_mu: float) -> void:
+	road_mu = next_road_mu
+	runoff_mu = next_runoff_mu
 
 func rounded_box_sdf(point: Vector2, half_size: Vector2, radius: float) -> float:
 	var q: Vector2 = point.abs() - half_size + Vector2(radius, radius)
@@ -26,7 +31,7 @@ func is_on_road(point: Vector2) -> bool:
 	return outer_d <= 0.0 and inner_d >= 0.0
 
 func surface_mu(point: Vector2) -> float:
-	return ASPHALT_MU if is_on_road(point) else GRASS_MU
+	return road_mu if is_on_road(point) else runoff_mu
 
 func _sdf_normal(point: Vector2, half_size: Vector2, radius: float) -> Vector2:
 	const EPS: float = 0.02

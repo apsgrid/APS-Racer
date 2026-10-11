@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "themes": [
+    {
+      "id": "red_dirt",
+      "name": "Red Dirt",
+      "tagline": "Broken Hill / Silverton",
+      "effect_mode": "dust",
+      "surface_name": "PACKED DIRT",
+      "runoff_name": "LOOSE DIRT",
+      "road_mu": 0.88,
+      "runoff_mu": 0.56,
+      "palette": {
+        "ground": "#6b2f1f",
+        "ground_dark": "#3c1d18",
+        "road": "#a94d2f",
+        "road_dark": "#74301f",
+        "road_light": "#c76a43",
+        "edge": "#e1aa72",
+        "barrier": "#b8aa93",
+        "barrier_dark": "#51463b",
+        "ui_bg": "#1a1411",
+        "ui_panel": "#241a15",
+        "ui_panel_alt": "#302018",
+        "ui_text": "#f4e7d6",
+        "ui_muted": "#c4aa8c",
+        "accent": "#f28a42",
+        "accent2": "#f3c776",
+        "danger": "#ff695e",
+        "success": "#8fd17d",
+        "skid": "#4d241b",
+        "effect": "#d89a66",
+        "car_shadow": "#21120f"
+      }
+    },
+    {
+      "id": "brisbane_neon_rain",
+      "name": "Brisbane Neon Rain",
+      "tagline": "Brisbane / 02:00 / raining",
+      "effect_mode": "spray",
+      "surface_name": "WET ASPHALT",
+      "runoff_name": "VERGE",
+      "road_mu": 0.96,
+      "runoff_mu": 0.43,
+      "palette": {
+        "ground": "#05070d",
+        "ground_dark": "#020309",
+        "road": "#121923",
+        "road_dark": "#090d14",
+        "road_light": "#233143",
+        "edge": "#7bdcff",
+        "barrier": "#5a6d7d",
+        "barrier_dark": "#141c25",
+        "ui_bg": "#070a11",
+        "ui_panel": "#0b111b",
+        "ui_panel_alt": "#101a27",
+        "ui_text": "#e9f6ff",
+        "ui_muted": "#89a7bb",
+        "accent": "#34d8ff",
+        "accent2": "#ff3ebf",
+        "danger": "#ff5b78",
+        "success": "#54f0b4",
+        "skid": "#05070b",
+        "effect": "#d7f6ff",
+        "car_shadow": "#00040a"
+      }
+    }
+  ]
+}

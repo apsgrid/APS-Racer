@@ -2,9 +2,9 @@
 
 Top-down racing prototype built in Godot 4.7.2 with a custom four-wheel vehicle simulation.
 
-## Current milestone: handling build
+## Current milestone: themeable presentation build
 
-The game now has a proper handling-test loop rather than a single generic car.
+The game now combines the custom handling model with a reskinnable presentation layer, a compact race HUD, mobile controls, and the in-game Handling Lab.
 
 ### Physics
 
@@ -33,12 +33,32 @@ These use the same physics code with different vehicle parameters and drivetrain
 ### Test circuit
 
 - Rounded high-speed circuit
-- Grass runoff between road and barriers
-- Braking markers
-- Slalom markers
+- Theme-selectable surface grip profile
+- Braking/slalom markers rendered as environment-appropriate props
 - Skid marks
-- Tyre smoke when rear tyres exceed the slip/grip threshold
+- Dust or wet-road spray
 - Speed-dependent camera zoom and look-ahead
+
+### Visual skins
+
+Press **G** or tap **SKIN** to switch the presentation without changing the track geometry or race logic.
+
+**Red Dirt**
+- Broken Hill / Silverton influence
+- packed red-earth racing surface
+- loose-dirt runoff
+- ochre terrain, scrub, rocks, fence posts and dust
+- rugged warm UI treatment
+
+**Brisbane Neon Rain**
+- Brisbane at about 02:00
+- permanently raining
+- wet asphalt and road spray
+- neon cyan/magenta edges and reflections
+- city-block/signage treatment
+- dark translucent cyberpunk UI
+
+Skin definitions live in `themes.json`. Rendering is isolated in `visual_renderer.gd`; physics remains in `vehicle_sim.gd`, and track geometry/collision remains in `track_model.gd`. A new skin should therefore be data plus optional renderer rules rather than a rewrite of game logic.
 
 ### Handling Lab
 
@@ -65,6 +85,9 @@ Keyboard:
 - Space: handbrake
 - R: reset
 - 1/2/3: select car
+- G: switch visual skin
+- H: toggle telemetry drawer
+- T / F1: Handling Lab
 
 Gamepad:
 - Left stick: steering
@@ -78,6 +101,9 @@ Touch:
 - GO
 - BRAKE
 - HANDBRAKE
+- SKIN
+- DATA
+- TUNE
 - CAR
 - RESET
 
@@ -124,12 +150,20 @@ The project uses GDScript and Godot's Compatibility renderer so Web and Android 
 
 ## Architecture
 
-Vehicle handling lives in vehicle_sim.gd rather than relying on a stock engine vehicle controller. Track geometry and collision live in track_model.gd. Godot provides rendering, input, packaging, audio and platform support while the vehicle model remains independently tunable.
+- `vehicle_sim.gd`: vehicle dynamics and tunable parameters
+- `vehicle_presets.json`: baked car setups
+- `track_model.gd`: course geometry, barriers and surface queries
+- `themes.json`: reskinnable environment/UI definitions
+- `theme_system.gd`: active theme selection and tokens
+- `visual_renderer.gd`: track, environment, weather, cars, HUD and touch rendering
+- `tuning_panel.gd`: Handling Lab UI and tune persistence
+
+This separation is intentional preparation for future map-derived tracks: a road/path source can eventually generate track geometry while the player independently chooses a visual/environment skin.
 
 ## Next gameplay milestones
 
-1. Verify the handling build by feel on keyboard/gamepad/touch and tune the three cars apart.
+1. Tune the three cars by feel on keyboard/gamepad/touch and bake the preferred baselines.
 2. Add checkpoints, lap timing, best lap and ghost replay.
 3. Add one AI opponent using a racing-line controller.
 4. Add race start/finish flow and a three-lap event.
-5. Replace placeholder car/track graphics only after the driving model is approved.
+5. Add APS Grid tune submission/versioning before the external tuner build is published.

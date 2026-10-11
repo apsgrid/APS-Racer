@@ -11,8 +11,11 @@ var car_selector: OptionButton
 var preset_name: LineEdit
 var saved_selector: OptionButton
 var status_label: Label
+var skin_label: Label
 var controls: Dictionary = {}
+var section_labels: Array[Label] = []
 var _syncing: bool = false
+var skin_data: Dictionary = {}
 
 func setup(target_sim: VehicleSim) -> void:
 	sim = target_sim
@@ -103,6 +106,11 @@ func _build_ui() -> void:
 	help.modulate = Color(0.78, 0.84, 0.9)
 	outer.add_child(help)
 
+	skin_label = Label.new()
+	skin_label.text = "VISUAL SKIN"
+	skin_label.add_theme_font_size_override("font_size", 11)
+	outer.add_child(skin_label)
+
 	var car_row: HBoxContainer = HBoxContainer.new()
 	outer.add_child(car_row)
 	var car_label: Label = Label.new()
@@ -178,7 +186,12 @@ func _build_ui() -> void:
 	grid.add_theme_constant_override("v_separation", 5)
 	scroll.add_child(grid)
 
+	var last_group: String = ""
 	for schema: Dictionary in sim.tuning_schema():
+		var group: String = _group_for_key(String(schema["key"]))
+		if group != last_group:
+			_add_section_header(grid, group)
+			last_group = group
 		_add_tuning_row(grid, schema)
 
 	status_label = Label.new()
@@ -186,6 +199,108 @@ func _build_ui() -> void:
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.modulate = Color(0.65, 0.9, 0.7)
 	outer.add_child(status_label)
+
+func apply_skin(next_skin: Dictionary) -> void:
+	skin_data = next_skin
+	if panel == null:
+		return
+
+	var palette: Dictionary = Dictionary(next_skin.get("palette", {}))
+	var bg: Color = Color(String(palette.get("ui_bg", "#080a0f")))
+	var panel_colour: Color = Color(String(palette.get("ui_panel", "#10151d")))
+	var panel_alt: Color = Color(String(palette.get("ui_panel_alt", "#17202a")))
+	var text: Color = Color(String(palette.get("ui_text", "#f4f6f8")))
+	var muted: Color = Color(String(palette.get("ui_muted", "#9ba8b5")))
+	var accent: Color = Color(String(palette.get("accent", "#49c8ff")))
+	var accent2: Color = Color(String(palette.get("accent2", "#ff4db8")))
+
+	panel.add_theme_stylebox_override("panel", _make_style(bg, accent, 12, 2))
+
+	var ui: Theme = Theme.new()
+	ui.set_color("font_color", "Label", text)
+	ui.set_color("font_color", "Button", text)
+	ui.set_color("font_hover_color", "Button", text)
+	ui.set_color("font_pressed_color", "Button", text)
+	ui.set_color("font_color", "LineEdit", text)
+	ui.set_color("font_color", "OptionButton", text)
+	ui.set_color("font_color", "SpinBox", text)
+	ui.set_color("font_uneditable_color", "LineEdit", muted)
+	ui.set_color("font_placeholder_color", "LineEdit", muted)
+	ui.set_color("font_outline_color", "Label", Color(0, 0, 0, 0.4))
+	ui.set_font_size("font_size", "Button", 13)
+	ui.set_font_size("font_size", "LineEdit", 13)
+	ui.set_font_size("font_size", "SpinBox", 13)
+	ui.set_font_size("font_size", "OptionButton", 13)
+
+	ui.set_stylebox("normal", "Button", _make_style(panel_alt, Color(accent, 0.38), 7, 1))
+	ui.set_stylebox("hover", "Button", _make_style(panel_alt.lightened(0.08), Color(accent, 0.72), 7, 1))
+	ui.set_stylebox("pressed", "Button", _make_style(Color(accent, 0.24), accent, 7, 2))
+	ui.set_stylebox("focus", "Button", _make_style(Color(0,0,0,0), Color(accent2, 0.8), 7, 1))
+
+	ui.set_stylebox("normal", "LineEdit", _make_style(panel_alt, Color(accent, 0.30), 6, 1))
+	ui.set_stylebox("focus", "LineEdit", _make_style(panel_alt, accent, 6, 1))
+	ui.set_stylebox("read_only", "LineEdit", _make_style(panel_colour, Color(accent, 0.20), 6, 1))
+	ui.set_stylebox("normal", "OptionButton", _make_style(panel_alt, Color(accent, 0.38), 7, 1))
+	ui.set_stylebox("hover", "OptionButton", _make_style(panel_alt.lightened(0.08), Color(accent, 0.72), 7, 1))
+	ui.set_stylebox("pressed", "OptionButton", _make_style(Color(accent, 0.24), accent, 7, 2))
+
+	ui.set_stylebox("slider", "HSlider", _make_style(panel_alt, Color(0,0,0,0), 4, 0))
+	ui.set_stylebox("grabber_area", "HSlider", _make_style(Color(accent, 0.55), Color(0,0,0,0), 4, 0))
+	ui.set_stylebox("grabber_area_highlight", "HSlider", _make_style(accent, Color(0,0,0,0), 4, 0))
+
+	panel.theme = ui
+	if skin_label != null:
+		skin_label.text = "%s  //  %s" % [
+			String(next_skin.get("name", "VISUAL SKIN")).to_upper(),
+			String(next_skin.get("tagline", "")).to_upper()
+		]
+		skin_label.modulate = accent2
+	for section: Label in section_labels:
+		section.modulate = accent
+
+func _make_style(fill: Color, border: Color, radius: int, width: int) -> StyleBoxFlat:
+	var style: StyleBoxFlat = StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = border
+	style.set_border_width_all(width)
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	return style
+
+func _group_for_key(key: String) -> String:
+	if key in ["mass", "inertia", "wheelbase", "track_width", "cg_height", "front_weight_fraction"]:
+		return "CHASSIS"
+	if key in ["drive_front_fraction", "max_engine_force", "reverse_force", "max_brake_force", "front_brake_bias"]:
+		return "POWER + BRAKES"
+	if key in ["base_tyre_mu", "corner_stiffness"]:
+		return "TYRES"
+	if key in ["max_steer_low", "max_steer_high", "steering_rate", "yaw_damping"]:
+		return "STEERING + STABILITY"
+	if key in ["handbrake_force", "handbrake_grip_scale"]:
+		return "HANDBRAKE"
+	return "AERO + RESISTANCE"
+
+func _add_section_header(grid: GridContainer, title: String) -> void:
+	var label: Label = Label.new()
+	label.text = title
+	label.add_theme_font_size_override("font_size", 12)
+	if not skin_data.is_empty():
+		var palette: Dictionary = Dictionary(skin_data.get("palette", {}))
+		label.modulate = Color(String(palette.get("accent", "#49c8ff")))
+	else:
+		label.modulate = Color(0.45, 0.85, 1.0)
+	label.custom_minimum_size.y = 28.0
+	grid.add_child(label)
+	section_labels.append(label)
+	var spacer: Label = Label.new()
+	spacer.text = ""
+	grid.add_child(spacer)
 
 func _add_tuning_row(grid: GridContainer, schema: Dictionary) -> void:
 	var key: String = String(schema["key"])

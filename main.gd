@@ -6,10 +6,14 @@ const MAX_SMOKE_PUFFS: int = 90
 
 var sim: VehicleSim = VehicleSim.new()
 var track: TrackModel = TrackModel.new()
+var themes: ThemeSystem = ThemeSystem.new()
+var visuals: VisualRenderer = VisualRenderer.new()
 var accumulator: float = 0.0
 var camera_world: Vector2 = Vector2.ZERO
 var pixels_per_meter: float = 25.0
 var touches: Dictionary = {}
+var visual_time: float = 0.0
+var telemetry_open: bool = false
 
 var skid_points: Array[Vector2] = []
 var previous_rear: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO]
@@ -26,10 +30,12 @@ func _ready() -> void:
 	add_child(tuning_panel)
 	tuning_panel.setup(sim)
 	tuning_panel.car_selected.connect(_on_tuning_car_selected)
+	_apply_theme()
 	set_process_input(true)
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
+	visual_time += delta
 	var controls: Dictionary = _read_controls()
 	accumulator = min(accumulator + delta, 0.25)
 	while accumulator >= SIM_DT:
@@ -70,10 +76,13 @@ func _record_tyre_effects(dt: float) -> void:
 			_add_skid_segment(previous_rear[1], rear_right)
 
 	smoke_spawn_cooldown = max(smoke_spawn_cooldown - dt, 0.0)
-	if moving and smoke_spawn_cooldown <= 0.0 and (slipping_left or slipping_right):
+	var ambient_trail: bool = moving and sim.speed_kph() > 28.0
+	var should_spawn: bool = slipping_left or slipping_right or ambient_trail
+	if moving and smoke_spawn_cooldown <= 0.0 and should_spawn:
 		smoke_positions.append((rear_left + rear_right) * 0.5)
 		smoke_life.append(0.72)
-		smoke_spawn_cooldown = 0.055
+		var base_interval: float = 0.10 if themes.effect_mode() == "dust" else 0.075
+		smoke_spawn_cooldown = 0.045 if (slipping_left or slipping_right) else base_interval
 		while smoke_positions.size() > MAX_SMOKE_PUFFS:
 			smoke_positions.remove_at(0)
 			smoke_life.remove_at(0)
@@ -160,6 +169,13 @@ func _input(event: InputEvent) -> void:
 		if event.keycode == KEY_T or event.keycode == KEY_F1:
 			tuning_panel.toggle()
 			return
+		elif event.keycode == KEY_G:
+			_cycle_theme()
+			return
+		elif event.keycode == KEY_H:
+			telemetry_open = not telemetry_open
+			queue_redraw()
+			return
 		elif event.keycode == KEY_ESCAPE and tuning_panel.is_open():
 			tuning_panel.set_open(false)
 			return
@@ -193,6 +209,11 @@ func _input(event: InputEvent) -> void:
 				_select_preset(sim.preset_index + 1)
 			elif Rect2(rects["tune"]).has_point(event.position):
 				tuning_panel.set_open(true)
+			elif Rect2(rects["theme"]).has_point(event.position):
+				_cycle_theme()
+			elif Rect2(rects["data"]).has_point(event.position):
+				telemetry_open = not telemetry_open
+				queue_redraw()
 		else:
 			touches.erase(event.index)
 
@@ -217,6 +238,21 @@ func _select_preset(index: int) -> void:
 func _on_tuning_car_selected(index: int) -> void:
 	_select_preset(index)
 
+func _cycle_theme() -> void:
+	themes.cycle(1)
+	_apply_theme()
+	smoke_positions.clear()
+	smoke_life.clear()
+	queue_redraw()
+
+func _apply_theme() -> void:
+	track.set_surface_profile(
+		float(themes.value("road_mu", 1.0)),
+		float(themes.value("runoff_mu", 0.43))
+	)
+	if tuning_panel != null:
+		tuning_panel.apply_skin(themes.current())
+
 func _touch_active(control_name: String) -> bool:
 	var rects: Dictionary = _control_rects()
 	var rect: Rect2 = Rect2(rects[control_name])
@@ -228,16 +264,19 @@ func _touch_active(control_name: String) -> bool:
 
 func _control_rects() -> Dictionary:
 	var view: Vector2 = get_viewport_rect().size
-	var button: Vector2 = Vector2(116.0, 116.0)
+	var drive_button: Vector2 = Vector2(104.0, 104.0)
+	var top_button: Vector2 = Vector2(84.0, 44.0)
 	return {
-		"left": Rect2(Vector2(24.0, view.y - 146.0), button),
-		"right": Rect2(Vector2(152.0, view.y - 146.0), button),
-		"brake": Rect2(Vector2(view.x - 280.0, view.y - 146.0), button),
-		"throttle": Rect2(Vector2(view.x - 152.0, view.y - 146.0), button),
-		"handbrake": Rect2(Vector2(view.x - 216.0, view.y - 274.0), Vector2(150.0, 92.0)),
-		"tune": Rect2(Vector2(view.x - 356.0, 20.0), Vector2(108.0, 54.0)),
-		"preset": Rect2(Vector2(view.x - 236.0, 20.0), Vector2(108.0, 54.0)),
-		"reset": Rect2(Vector2(view.x - 116.0, 20.0), Vector2(92.0, 54.0))
+		"left": Rect2(Vector2(28.0, view.y - 132.0), drive_button),
+		"right": Rect2(Vector2(146.0, view.y - 132.0), drive_button),
+		"brake": Rect2(Vector2(view.x - 258.0, view.y - 132.0), Vector2(104.0, 104.0)),
+		"throttle": Rect2(Vector2(view.x - 140.0, view.y - 132.0), Vector2(104.0, 104.0)),
+		"handbrake": Rect2(Vector2(view.x - 230.0, view.y - 214.0), Vector2(194.0, 58.0)),
+		"theme": Rect2(Vector2(view.x - 470.0, 20.0), top_button),
+		"data": Rect2(Vector2(view.x - 378.0, 20.0), top_button),
+		"tune": Rect2(Vector2(view.x - 286.0, 20.0), top_button),
+		"preset": Rect2(Vector2(view.x - 194.0, 20.0), top_button),
+		"reset": Rect2(Vector2(view.x - 102.0, 20.0), top_button)
 	}
 
 func _world_to_screen(world_pos: Vector2) -> Vector2:
@@ -251,151 +290,58 @@ func _world_points_to_screen(world_points: PackedVector2Array) -> PackedVector2A
 	return screen_points
 
 func _draw() -> void:
-	var view: Vector2 = get_viewport_rect().size
-	draw_rect(Rect2(Vector2.ZERO, view), Color("#285f32"))
-	_draw_track()
-	_draw_skid_marks()
-	_draw_smoke()
-	_draw_test_markers()
-	_draw_car()
-	_draw_telemetry()
-	_draw_touch_controls()
+	visuals.draw_world(
+		self,
+		themes,
+		track,
+		Callable(self, "_world_to_screen"),
+		Callable(self, "_world_points_to_screen"),
+		pixels_per_meter,
+		visual_time
+	)
+	visuals.draw_skid_marks(
+		self,
+		themes,
+		skid_points,
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter
+	)
+	visuals.draw_tyre_effects(
+		self,
+		themes,
+		smoke_positions,
+		smoke_life,
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter
+	)
+	visuals.draw_car(
+		self,
+		themes,
+		sim,
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter
+	)
 
-func _draw_track() -> void:
-	var outer_road: PackedVector2Array = _world_points_to_screen(track.road_outer_points())
-	var inner_road: PackedVector2Array = _world_points_to_screen(track.road_inner_points())
-	draw_colored_polygon(outer_road, Color("#3d4147"))
-	draw_colored_polygon(inner_road, Color("#285f32"))
+	var surface_name: String = String(themes.value("surface_name", "ROAD"))
+	if not track.is_on_road(sim.position):
+		surface_name = String(themes.value("runoff_name", "RUNOFF"))
 
-	var outer_barrier: PackedVector2Array = _world_points_to_screen(track.barrier_outer_points())
-	var inner_barrier: PackedVector2Array = _world_points_to_screen(track.barrier_inner_points())
-	if outer_barrier.size() > 1:
-		outer_barrier.append(outer_barrier[0])
-		draw_polyline(outer_barrier, Color("#d8d8d8"), 4.0, true)
-	if inner_barrier.size() > 1:
-		inner_barrier.append(inner_barrier[0])
-		draw_polyline(inner_barrier, Color("#d8d8d8"), 4.0, true)
-
-	_draw_start_line()
-
-func _draw_start_line() -> void:
-	for i: int in range(8):
-		var y0: float = 12.2 + float(i) * 0.96
-		var colour: Color = Color.WHITE if i % 2 == 0 else Color.BLACK
-		var a: Vector2 = _world_to_screen(Vector2(-0.25, y0))
-		var b: Vector2 = _world_to_screen(Vector2(0.25, y0 + 0.96))
-		draw_rect(Rect2(a, b - a), colour)
-
-func _draw_test_markers() -> void:
-	var marker_colour: Color = Color(1.0, 0.74, 0.18, 0.9)
-	for x: float in [-20.0, -12.0, -4.0, 4.0, 12.0, 20.0]:
-		var pos: Vector2 = _world_to_screen(Vector2(x, -16.0))
-		draw_circle(pos, max(3.0, pixels_per_meter * 0.12), marker_colour)
-	for x: float in [-16.0, -8.0, 0.0, 8.0, 16.0]:
-		var offset: float = 1.2 if int(x / 8.0) % 2 == 0 else -1.2
-		var pos2: Vector2 = _world_to_screen(Vector2(x, 16.0 + offset))
-		draw_circle(pos2, max(3.0, pixels_per_meter * 0.12), Color("#77c9ff"))
-
-func _draw_skid_marks() -> void:
-	for i: int in range(0, skid_points.size() - 1, 2):
-		var a: Vector2 = _world_to_screen(skid_points[i])
-		var b: Vector2 = _world_to_screen(skid_points[i + 1])
-		draw_line(a, b, Color(0.05, 0.05, 0.05, 0.58), max(1.0, pixels_per_meter * 0.07), true)
-
-func _draw_smoke() -> void:
-	for i: int in range(smoke_positions.size()):
-		var life_ratio: float = clamp(smoke_life[i] / 0.72, 0.0, 1.0)
-		var radius: float = pixels_per_meter * lerp(0.18, 0.58, 1.0 - life_ratio)
-		var alpha: float = 0.32 * life_ratio
-		draw_circle(_world_to_screen(smoke_positions[i]), radius, Color(0.9, 0.9, 0.9, alpha))
-
-func _draw_car() -> void:
-	var body_local: Array[Vector2] = [
-		Vector2(2.2, -0.9),
-		Vector2(2.2, 0.9),
-		Vector2(-2.2, 0.9),
-		Vector2(-2.2, -0.9)
-	]
-	var body_screen: PackedVector2Array = PackedVector2Array()
-	for point: Vector2 in body_local:
-		body_screen.append(_world_to_screen(sim.position + point.rotated(sim.angle)))
-
-	var body_colour: Color = Color("#e34f4f")
-	if sim.preset_index == 1:
-		body_colour = Color("#55a9ff")
-	elif sim.preset_index == 2:
-		body_colour = Color("#f2c14e")
-	draw_colored_polygon(body_screen, body_colour)
-
-	var nose_a: Vector2 = _world_to_screen(sim.position + Vector2(2.22, -0.62).rotated(sim.angle))
-	var nose_b: Vector2 = _world_to_screen(sim.position + Vector2(2.22, 0.62).rotated(sim.angle))
-	draw_line(nose_a, nose_b, Color("#fff2a8"), 4.0)
-
-	var offsets: Array[Vector2] = sim.get_wheel_offsets()
-	for i: int in range(4):
-		var steer: float = sim.steering_angle if i < 2 else 0.0
-		_draw_wheel(offsets[i], steer)
-
-func _draw_wheel(local_pos: Vector2, steer: float) -> void:
-	var centre_world: Vector2 = sim.position + local_pos.rotated(sim.angle)
-	var wheel_angle: float = sim.angle + steer
-	var half: Vector2 = Vector2(0.34, 0.13)
-	var local_points: Array[Vector2] = [
-		Vector2(half.x, -half.y),
-		Vector2(half.x, half.y),
-		Vector2(-half.x, half.y),
-		Vector2(-half.x, -half.y)
-	]
-	var screen_points: PackedVector2Array = PackedVector2Array()
-	for point: Vector2 in local_points:
-		screen_points.append(_world_to_screen(centre_world + point.rotated(wheel_angle)))
-	draw_colored_polygon(screen_points, Color("#111111"))
-
-func _draw_telemetry() -> void:
-	var surface_name: String = "ASPHALT" if sim.last_surface_mu > 0.8 else "GRASS"
 	var joy_name: String = "NONE"
 	var joypads: Array[int] = Input.get_connected_joypads()
 	if not joypads.is_empty():
 		joy_name = Input.get_joy_name(joypads[0])
 
-	var lines: Array[String] = [
-		"APS RACER // HANDLING BUILD",
-		"Car: " + sim.preset_name,
-		"Speed: %6.1f km/h" % sim.speed_kph(),
-		"Steer: %6.1f deg" % rad_to_deg(sim.steering_angle),
-		"Yaw:   %6.1f deg/s" % rad_to_deg(sim.angular_velocity),
-		"Long G: %5.2f" % (sim.last_long_accel / 9.81),
-		"Lat G:  %5.2f" % (sim.last_lat_accel / 9.81),
-		"FL slip: %5.1f deg  grip %3.0f%%" % [sim.wheel_slip_angles[0], sim.wheel_grip_usage[0] * 100.0],
-		"FR slip: %5.1f deg  grip %3.0f%%" % [sim.wheel_slip_angles[1], sim.wheel_grip_usage[1] * 100.0],
-		"RL slip: %5.1f deg  grip %3.0f%%" % [sim.wheel_slip_angles[2], sim.wheel_grip_usage[2] * 100.0],
-		"RR slip: %5.1f deg  grip %3.0f%%" % [sim.wheel_slip_angles[3], sim.wheel_grip_usage[3] * 100.0],
-		"Surface: " + surface_name,
-		"Impact: %4.0f km/h" % sim.last_impact_kph,
-		"Gamepad: " + joy_name,
-		"1/2/3 cars | WASD/arrows | Space handbrake | R reset | T tune"
-	]
-	var font: Font = ThemeDB.fallback_font
-	for i: int in range(lines.size()):
-		var pos: Vector2 = Vector2(18.0, 30.0 + float(i) * 21.0)
-		draw_string(font, pos, lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1.0, 16, Color.WHITE)
+	visuals.draw_hud(self, themes, sim, surface_name, telemetry_open, joy_name)
 
-func _draw_touch_controls() -> void:
 	var rects: Dictionary = _control_rects()
-	_draw_touch_button(Rect2(rects["left"]), "<", _touch_active("left"))
-	_draw_touch_button(Rect2(rects["right"]), ">", _touch_active("right"))
-	_draw_touch_button(Rect2(rects["brake"]), "BRAKE", _touch_active("brake"))
-	_draw_touch_button(Rect2(rects["throttle"]), "GO", _touch_active("throttle"))
-	_draw_touch_button(Rect2(rects["handbrake"]), "HANDBRAKE", _touch_active("handbrake"))
-	_draw_touch_button(Rect2(rects["tune"]), "TUNE", tuning_panel != null and tuning_panel.is_open())
-	_draw_touch_button(Rect2(rects["preset"]), "CAR", false)
-	_draw_touch_button(Rect2(rects["reset"]), "RESET", false)
-
-func _draw_touch_button(rect: Rect2, label: String, active: bool) -> void:
-	var fill: Color = Color(1.0, 1.0, 1.0, 0.28 if active else 0.14)
-	draw_rect(rect, fill, true)
-	draw_rect(rect, Color(1.0, 1.0, 1.0, 0.55), false, 2.0)
-	var font: Font = ThemeDB.fallback_font
-	var text_size: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 18)
-	var text_pos: Vector2 = rect.position + (rect.size - text_size) * 0.5 + Vector2(0.0, text_size.y * 0.78)
-	draw_string(font, text_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 18, Color.WHITE)
+	var active: Dictionary = {
+		"left": _touch_active("left"),
+		"right": _touch_active("right"),
+		"brake": _touch_active("brake"),
+		"throttle": _touch_active("throttle"),
+		"handbrake": _touch_active("handbrake"),
+		"data": telemetry_open,
+		"tune": tuning_panel != null and tuning_panel.is_open()
+	}
+	var show_touch: bool = OS.has_feature("web") or OS.has_feature("android") or DisplayServer.is_touchscreen_available()
+	visuals.draw_touch_controls(self, themes, rects, active, show_touch)

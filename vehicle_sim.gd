@@ -190,12 +190,12 @@ func tuning_schema() -> Array[Dictionary]:
 		{"key":"front_brake_bias", "label":"Front brake bias", "min":45.0, "max":80.0, "step":0.5, "unit":"%", "scale":100.0},
 		{"key":"base_tyre_mu", "label":"Tyre grip", "min":0.70, "max":1.50, "step":0.01, "unit":"mu"},
 		{"key":"corner_stiffness", "label":"Corner stiffness", "min":1800.0, "max":6000.0, "step":50.0, "unit":"N/(m/s)"},
-		{"key":"yaw_damping", "label":"Yaw damping", "min":300.0, "max":1800.0, "step":25.0, "unit":""},
 		{"key":"aero_drag", "label":"Aero drag", "min":0.15, "max":1.00, "step":0.01, "unit":""},
 		{"key":"rolling_resistance", "label":"Rolling resistance", "min":50.0, "max":350.0, "step":5.0, "unit":"N"},
 		{"key":"max_steer_low", "label":"Low-speed steer", "min":20.0, "max":45.0, "step":0.5, "unit":"deg", "degrees":true},
 		{"key":"max_steer_high", "label":"High-speed steer", "min":5.0, "max":20.0, "step":0.5, "unit":"deg", "degrees":true},
 		{"key":"steering_rate", "label":"Steering rate", "min":60.0, "max":300.0, "step":5.0, "unit":"deg/s", "degrees":true},
+		{"key":"yaw_damping", "label":"Yaw damping", "min":300.0, "max":1800.0, "step":25.0, "unit":""},
 		{"key":"handbrake_force", "label":"Handbrake force", "min":2000.0, "max":10000.0, "step":100.0, "unit":"N"},
 		{"key":"handbrake_grip_scale", "label":"Rear grip on HB", "min":20.0, "max":100.0, "step":1.0, "unit":"%", "scale":100.0}
 	]
