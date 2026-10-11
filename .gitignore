@@ -1,4 +1,5 @@
 .godot/
-builds/
+builds/*
+!builds/.gdignore
 exports/
 *.tmp
