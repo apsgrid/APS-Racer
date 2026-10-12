@@ -3,6 +3,8 @@ extends RefCounted
 
 const SAVE_PATH: String = "user://aps_racer_race_records.json"
 const GHOST_SAMPLE_INTERVAL: float = 1.0 / 30.0
+const MAX_GHOST_SECONDS: float = 180.0
+const MAX_GHOST_SAMPLES: int = 5400
 
 var total_laps: int = 3
 var state: String = "countdown"
@@ -24,12 +26,15 @@ var paused: bool = false
 
 var race_key: String = "default"
 var persistence_enabled: bool = true
+var ghost_recording_enabled: bool = true
+var ghost_overflowed: bool = false
 var current_ghost: Array = []
 var best_ghost: Array = []
 var ghost_sample_accumulator: float = 0.0
 
-func _init(enable_persistence: bool = true) -> void:
+func _init(enable_persistence: bool = true, enable_ghost_recording: bool = true) -> void:
 	persistence_enabled = enable_persistence
+	ghost_recording_enabled = enable_ghost_recording
 
 func configure(key: String, laps: int = 3) -> void:
 	race_key = key
@@ -52,6 +57,7 @@ func restart() -> void:
 	finish_time = 0.0
 	current_ghost.clear()
 	ghost_sample_accumulator = 0.0
+	ghost_overflowed = false
 	paused = false
 
 func set_paused(value: bool) -> void:
@@ -137,9 +143,12 @@ func _complete_lap(position: Vector2, angle: float) -> void:
 	var new_best: bool = best_lap_time <= 0.0 or last_lap_time < best_lap_time
 	if new_best:
 		best_lap_time = last_lap_time
-		best_ghost = current_ghost.duplicate(true)
-		if best_ghost.is_empty() or float(best_ghost[-1].get("t", 0.0)) < lap_elapsed:
-			best_ghost.append({"t": lap_elapsed, "x": position.x, "y": position.y, "a": angle})
+		if ghost_recording_enabled and not ghost_overflowed:
+			best_ghost = current_ghost.duplicate(true)
+			if best_ghost.is_empty() or float(best_ghost[-1].get("t", 0.0)) < lap_elapsed:
+				best_ghost.append({"t": lap_elapsed, "x": position.x, "y": position.y, "a": angle})
+		else:
+			best_ghost.clear()
 		_save_record()
 
 	event_message = ("NEW BEST  " if new_best else "LAP  ") + format_time(last_lap_time)
@@ -162,13 +171,20 @@ func _start_lap(position: Vector2, angle: float) -> void:
 	next_checkpoint = 1
 	current_ghost.clear()
 	ghost_sample_accumulator = 0.0
-	current_ghost.append({"t": 0.0, "x": position.x, "y": position.y, "a": angle})
+	ghost_overflowed = false
+	if ghost_recording_enabled:
+		current_ghost.append({"t": 0.0, "x": position.x, "y": position.y, "a": angle})
 
 func _record_ghost(dt: float, position: Vector2, angle: float) -> void:
+	if not ghost_recording_enabled or ghost_overflowed:
+		return
 	ghost_sample_accumulator += dt
 	if ghost_sample_accumulator < GHOST_SAMPLE_INTERVAL:
 		return
 	ghost_sample_accumulator = fmod(ghost_sample_accumulator, GHOST_SAMPLE_INTERVAL)
+	if current_ghost.size() >= MAX_GHOST_SAMPLES or lap_elapsed >= MAX_GHOST_SECONDS:
+		ghost_overflowed = true
+		return
 	current_ghost.append({
 		"t": lap_elapsed,
 		"x": position.x,

@@ -170,6 +170,18 @@ Use -WebOnly, -WindowsOnly, -AndroidOnly, or -SkipTests when appropriate.
 
 The Web export has been smoke-tested in Chrome with WebGL 2 and the Compatibility renderer. The Android APK is zip-aligned, debug-signed, and targets Android 16 / API 36.
 
+### Web memory stability
+
+v0.4.1 fixes a Web renderer memory leak introduced by rebuilding static scenery and ambient weather with immediate-mode draw commands every frame.
+
+- static world geometry is now retained in `static_world_layer.gd` and only redrawn when the active skin changes
+- weather is retained in `weather_layer.gd` and animated by transform rather than rebuilding particles/lines every frame
+- track/racing-line geometry is cached
+- AI ghost recording is disabled
+- player ghost recording is hard-capped at 5,400 samples / 180 seconds
+
+Measured in a clean Chrome process tree, the renderer previously climbed continuously; after the fix it remained around 359–377 MB over a 60-second run and ended below its starting sample.
+
 ## Platform strategy
 
 Primary targets:
@@ -189,7 +201,9 @@ The project uses GDScript and Godot's Compatibility renderer so Web and Android 
 - `ai_driver.gd`: first racing-line AI controller
 - `themes.json`: reskinnable environment/UI definitions
 - `theme_system.gd`: active theme selection and tokens
-- `visual_renderer.gd`: track, environment, weather, cars, HUD and touch rendering
+- `visual_renderer.gd`: shared drawing helpers for track, cars, HUD and touch rendering
+- `static_world_layer.gd`: retained/cached environment and track presentation
+- `weather_layer.gd`: retained animated dust/rain layer
 - `tuning_panel.gd`: Handling Lab UI and tune persistence
 
 This separation is intentional preparation for future map-derived tracks: a road/path source can eventually generate track geometry while the player independently chooses a visual/environment skin.

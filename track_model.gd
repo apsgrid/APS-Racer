@@ -16,6 +16,69 @@ const CAR_COLLISION_RADIUS: float = 1.15
 var road_mu: float = 1.0
 var runoff_mu: float = 0.43
 
+var _road_outer_cache: PackedVector2Array = PackedVector2Array()
+var _road_inner_cache: PackedVector2Array = PackedVector2Array()
+var _barrier_outer_cache: PackedVector2Array = PackedVector2Array()
+var _barrier_inner_cache: PackedVector2Array = PackedVector2Array()
+var _race_gates_cache: Array[Dictionary] = []
+var _racing_line_cache: Array[Vector2] = []
+
+func _init() -> void:
+	_road_outer_cache = rounded_rect_points(ROAD_OUTER_HALF, ROAD_OUTER_RADIUS, 12)
+	_road_inner_cache = rounded_rect_points(ROAD_INNER_HALF, ROAD_INNER_RADIUS, 12)
+	_barrier_outer_cache = rounded_rect_points(BARRIER_OUTER_HALF, BARRIER_OUTER_RADIUS, 12)
+	_barrier_inner_cache = rounded_rect_points(BARRIER_INNER_HALF, BARRIER_INNER_RADIUS, 12)
+	_race_gates_cache = [
+		{
+			"name":"START / FINISH",
+			"position":Vector2(0.0, 16.0),
+			"radius":4.5,
+			"direction":Vector2(1.0, 0.0),
+			"a":Vector2(0.0, 12.2),
+			"b":Vector2(0.0, 19.8)
+		},
+		{
+			"name":"EAST",
+			"position":Vector2(30.0, 0.0),
+			"radius":5.0,
+			"direction":Vector2(0.0, -1.0),
+			"a":Vector2(26.2, 0.0),
+			"b":Vector2(33.8, 0.0)
+		},
+		{
+			"name":"BACK STRAIGHT",
+			"position":Vector2(0.0, -16.0),
+			"radius":4.5,
+			"direction":Vector2(-1.0, 0.0),
+			"a":Vector2(0.0, -19.8),
+			"b":Vector2(0.0, -12.2)
+		},
+		{
+			"name":"WEST",
+			"position":Vector2(-30.0, 0.0),
+			"radius":5.0,
+			"direction":Vector2(0.0, 1.0),
+			"a":Vector2(-33.8, 0.0),
+			"b":Vector2(-26.2, 0.0)
+		}
+	]
+	_racing_line_cache = [
+		Vector2(0.0, 16.0),
+		Vector2(18.0, 16.0),
+		Vector2(26.0, 13.5),
+		Vector2(30.5, 7.0),
+		Vector2(30.5, -7.0),
+		Vector2(26.0, -13.5),
+		Vector2(18.0, -16.0),
+		Vector2(0.0, -16.0),
+		Vector2(-18.0, -16.0),
+		Vector2(-26.0, -13.5),
+		Vector2(-30.5, -7.0),
+		Vector2(-30.5, 7.0),
+		Vector2(-26.0, 13.5),
+		Vector2(-18.0, 16.0)
+	]
+
 func set_surface_profile(next_road_mu: float, next_runoff_mu: float) -> void:
 	road_mu = next_road_mu
 	runoff_mu = next_runoff_mu
@@ -88,67 +151,19 @@ func rounded_rect_points(half_size: Vector2, radius: float, corner_segments: int
 	return points
 
 func road_outer_points() -> PackedVector2Array:
-	return rounded_rect_points(ROAD_OUTER_HALF, ROAD_OUTER_RADIUS, 12)
+	return _road_outer_cache
 
 func road_inner_points() -> PackedVector2Array:
-	return rounded_rect_points(ROAD_INNER_HALF, ROAD_INNER_RADIUS, 12)
+	return _road_inner_cache
 
 func barrier_outer_points() -> PackedVector2Array:
-	return rounded_rect_points(BARRIER_OUTER_HALF, BARRIER_OUTER_RADIUS, 12)
+	return _barrier_outer_cache
 
 func barrier_inner_points() -> PackedVector2Array:
-	return rounded_rect_points(BARRIER_INNER_HALF, BARRIER_INNER_RADIUS, 12)
+	return _barrier_inner_cache
 
 func race_gates() -> Array[Dictionary]:
-	return [
-		{
-			"name":"START / FINISH",
-			"position":Vector2(0.0, 16.0),
-			"radius":4.5,
-			"direction":Vector2(1.0, 0.0),
-			"a":Vector2(0.0, 12.2),
-			"b":Vector2(0.0, 19.8)
-		},
-		{
-			"name":"EAST",
-			"position":Vector2(30.0, 0.0),
-			"radius":5.0,
-			"direction":Vector2(0.0, -1.0),
-			"a":Vector2(26.2, 0.0),
-			"b":Vector2(33.8, 0.0)
-		},
-		{
-			"name":"BACK STRAIGHT",
-			"position":Vector2(0.0, -16.0),
-			"radius":4.5,
-			"direction":Vector2(-1.0, 0.0),
-			"a":Vector2(0.0, -19.8),
-			"b":Vector2(0.0, -12.2)
-		},
-		{
-			"name":"WEST",
-			"position":Vector2(-30.0, 0.0),
-			"radius":5.0,
-			"direction":Vector2(0.0, 1.0),
-			"a":Vector2(-33.8, 0.0),
-			"b":Vector2(-26.2, 0.0)
-		}
-	]
+	return _race_gates_cache
 
 func racing_line_points() -> Array[Vector2]:
-	return [
-		Vector2(0.0, 16.0),
-		Vector2(18.0, 16.0),
-		Vector2(26.0, 13.5),
-		Vector2(30.5, 7.0),
-		Vector2(30.5, -7.0),
-		Vector2(26.0, -13.5),
-		Vector2(18.0, -16.0),
-		Vector2(0.0, -16.0),
-		Vector2(-18.0, -16.0),
-		Vector2(-26.0, -13.5),
-		Vector2(-30.5, -7.0),
-		Vector2(-30.5, 7.0),
-		Vector2(-26.0, 13.5),
-		Vector2(-18.0, 16.0)
-	]
+	return _racing_line_cache

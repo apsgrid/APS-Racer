@@ -8,9 +8,11 @@ var sim: VehicleSim = VehicleSim.new()
 var track: TrackModel = TrackModel.new()
 var themes: ThemeSystem = ThemeSystem.new()
 var visuals: VisualRenderer = VisualRenderer.new()
+var static_world: StaticWorldLayer
+var weather_layer: WeatherLayer
 var race: RaceSystem = RaceSystem.new(true)
 var ai_driver: AIDriver = AIDriver.new()
-var ai_race: RaceSystem = RaceSystem.new(false)
+var ai_race: RaceSystem = RaceSystem.new(false, false)
 var accumulator: float = 0.0
 var camera_world: Vector2 = Vector2.ZERO
 var pixels_per_meter: float = 25.0
@@ -30,6 +32,12 @@ func _ready() -> void:
 	sim.set_preset(0)
 	ai_driver.setup()
 	camera_world = sim.position
+	static_world = StaticWorldLayer.new()
+	add_child(static_world)
+	static_world.setup(visuals, themes, track)
+	weather_layer = WeatherLayer.new()
+	add_child(weather_layer)
+	weather_layer.setup(themes)
 	tuning_panel = TuningPanel.new()
 	add_child(tuning_panel)
 	tuning_panel.setup(sim)
@@ -79,6 +87,8 @@ func _physics_process(delta: float) -> void:
 	camera_world = camera_world.lerp(camera_target, 1.0 - exp(-6.0 * delta))
 	var zoom_target: float = lerp(29.0, 17.5, clamp(speed / 48.0, 0.0, 1.0))
 	pixels_per_meter = lerp(pixels_per_meter, zoom_target, 1.0 - exp(-4.0 * delta))
+	if static_world != null:
+		static_world.update_camera(camera_world, pixels_per_meter, get_viewport_rect().size)
 	queue_redraw()
 
 func _record_tyre_effects(dt: float) -> void:
@@ -324,6 +334,10 @@ func _apply_theme() -> void:
 	)
 	if tuning_panel != null:
 		tuning_panel.apply_skin(themes.current())
+	if static_world != null:
+		static_world.refresh_theme()
+	if weather_layer != null:
+		weather_layer.refresh_theme()
 
 func _touch_active(control_name: String) -> bool:
 	var rects: Dictionary = _control_rects()
@@ -362,15 +376,6 @@ func _world_points_to_screen(world_points: PackedVector2Array) -> PackedVector2A
 	return screen_points
 
 func _draw() -> void:
-	visuals.draw_world(
-		self,
-		themes,
-		track,
-		Callable(self, "_world_to_screen"),
-		Callable(self, "_world_points_to_screen"),
-		pixels_per_meter,
-		visual_time
-	)
 	visuals.draw_race_guidance(
 		self,
 		themes,

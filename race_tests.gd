@@ -6,6 +6,7 @@ func _init() -> void:
 	print("=== APS RACER RACE TESTS ===")
 	_test_checkpoint_order_and_laps()
 	_test_ghost_playback()
+	_test_ghost_memory_cap()
 	_test_ai_driver()
 
 	if failures.is_empty():
@@ -82,12 +83,27 @@ func _test_ghost_playback() -> void:
 	_assert(ghost.has("position"), "Ghost transform has no position.")
 	print("Ghost playback | transform available=", not ghost.is_empty())
 
+func _test_ghost_memory_cap() -> void:
+	var track: TrackModel = TrackModel.new()
+	var race: RaceSystem = RaceSystem.new(false, true)
+	race.configure("memory-cap", 1)
+	race.restart()
+	race.step(3.30, Vector2(-3.0, 15.0), 0.0, track)
+
+	var dt: float = 1.0 / 30.0
+	for i: int in range(RaceSystem.MAX_GHOST_SAMPLES + 600):
+		race.step(dt, Vector2(-3.0, 15.0), 0.0, track)
+
+	_assert(race.current_ghost.size() <= RaceSystem.MAX_GHOST_SAMPLES, "Ghost buffer exceeded its hard cap.")
+	_assert(race.ghost_overflowed, "Ghost overflow flag was not set after reaching the cap.")
+	print("Ghost memory cap | frames ", race.current_ghost.size(), " / ", RaceSystem.MAX_GHOST_SAMPLES)
+
 func _test_ai_driver() -> void:
 	var track: TrackModel = TrackModel.new()
 	track.set_surface_profile(0.88, 0.56)
 	var ai: AIDriver = AIDriver.new()
 	ai.setup()
-	var ai_race: RaceSystem = RaceSystem.new(false)
+	var ai_race: RaceSystem = RaceSystem.new(false, false)
 	ai_race.configure("ai-test", 3)
 	ai_race.restart()
 	var on_road_samples: int = 0

@@ -35,12 +35,25 @@ func draw_world(
 ) -> void:
 	var viewport_size: Vector2 = canvas.get_viewport_rect().size
 	canvas.draw_rect(Rect2(Vector2.ZERO, viewport_size), theme.colour("ground"))
+	draw_static_world(canvas, theme, track, world_to_screen, world_points_to_screen, pixels_per_meter)
+	draw_weather(canvas, theme, visual_time)
+
+func draw_static_world(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	track: TrackModel,
+	world_to_screen: Callable,
+	world_points_to_screen: Callable,
+	pixels_per_meter: float
+) -> void:
 	if theme.id() == "red_dirt":
 		_draw_red_dirt_environment(canvas, theme, world_to_screen, pixels_per_meter)
 	else:
 		_draw_neon_environment(canvas, theme, world_to_screen, pixels_per_meter)
 	_draw_track(canvas, theme, track, world_to_screen, world_points_to_screen, pixels_per_meter)
 	_draw_course_markers(canvas, theme, world_to_screen, pixels_per_meter)
+
+func draw_weather(canvas: CanvasItem, theme: ThemeSystem, visual_time: float) -> void:
 	_draw_weather(canvas, theme, visual_time)
 
 func _draw_red_dirt_environment(
@@ -607,18 +620,12 @@ func _draw_panel(
 	rect: Rect2,
 	fill: Color,
 	border: Color,
-	radius: int,
+	_radius: int,
 	border_width: int
 ) -> void:
-	var style: StyleBoxFlat = StyleBoxFlat.new()
-	style.bg_color = fill
-	style.border_color = border
-	style.set_border_width_all(border_width)
-	style.corner_radius_top_left = radius
-	style.corner_radius_top_right = radius
-	style.corner_radius_bottom_left = radius
-	style.corner_radius_bottom_right = radius
-	canvas.draw_style_box(style, rect)
+	canvas.draw_rect(rect, fill, true)
+	if border_width > 0:
+		canvas.draw_rect(rect, border, false, float(border_width))
 
 func _screen_rect_from_world(world_to_screen: Callable, world_rect: Rect2) -> Rect2:
 	var a: Vector2 = world_to_screen.call(world_rect.position)
