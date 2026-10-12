@@ -15,6 +15,9 @@ $BuildWindows = (-not $OnlyMode) -or $WindowsOnly
 $BuildAndroid = (-not $OnlyMode) -or $AndroidOnly
 
 if (-not $SkipTests) {
+    & py (Join-Path $Project "tools\validate_art_assets.py")
+    if ($LASTEXITCODE -ne 0) { throw "Art asset validation failed." }
+
     & $Godot --headless --path $Project --script res://handling_tests.gd
     if ($LASTEXITCODE -ne 0) { throw "Handling tests failed." }
 

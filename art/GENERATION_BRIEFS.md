@@ -201,33 +201,36 @@ Do not:
 - make it SUV/crossover height
 - add giant racing wing
 
-## BNR-03 Neon AWD Street Weapon
+## BNR-03 XC90 P2 Nightrunner
 
 Physics mapping: AWD RALLY
 
 Core shape:
-- low, wide AWD super-saloon / shooting-brake / rally-derived street machine
-- longer roof than GT
-- muscular arches
-- practical central cabin volume
-- planted stance
-- optional restrained rear wing or roof spoiler
+- first-generation 2002-2014 XC90 P2-inspired luxury SUV silhouette
+- tall, square seven-seat wagon proportions rather than a crossover coupe
+- long roof with twin roof rails
+- broad shoulders and near-vertical tailgate
+- distinctive tall vertical rear-light read
+- planted AWD road stance, slightly lowered but still unmistakably SUV-height
+- original/unbranded details rather than copied Volvo badges or grille graphics
 
 Surface:
-- glossy charcoal / pearl white / deep violet
-- wet highlights
-- cyan/magenta reflection accents
-- crisp light bars
+- glossy charcoal / deep graphite / midnight blue
+- wet highlights and rain droplets
+- restrained cyan/magenta reflection accents
+- cool-white front lighting and red vertical rear lighting
 
 Top-down readability:
-- widest Neon vehicle
-- longer roof mass than GT
-- aggressive but road-plausible
+- tallest/boxiest Neon vehicle
+- longest roof mass in the Neon family
+- clear SUV footprint and roof rails
+- recognisable P2-era Scandinavian SUV character without relying on a logo
 
 Do not:
-- turn it into a rally car with mud tyres
-- make it cyber tank
-- use full-width neon body outlines
+- turn it into a modern coupe-SUV
+- turn it into an off-road truck with mud tyres
+- make it a cyber tank
+- use manufacturer logos or full-width neon body outlines
 
 ---
 
@@ -256,7 +259,7 @@ Avoid:
 - lush green vegetation
 - desert dunes
 - American Southwest roadside iconography
-- Western cowboy clichés
+- Western cowboy clichÃ©s
 - photoreal aerial photography look
 
 ## Brisbane Neon Rain hero environment frame
@@ -279,7 +282,7 @@ Mood:
 "Brisbane at about 2am, permanently raining, sleek cyberpunk street-racing fantasy, dark and reflective rather than garish"
 
 Avoid:
-- Tokyo signage clichés
+- Tokyo signage clichÃ©s
 - dense kanji/neon-wall aesthetic
 - Blade Runner imitation
 - daytime city

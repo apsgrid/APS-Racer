@@ -549,10 +549,10 @@
       ]
     },
     {
-      "id": "neon_awd",
+      "id": "neon_xc90_p2",
       "skin": "brisbane_neon_rain",
       "physics_class": "awd_rally",
-      "display_archetype": "Neon AWD Street Weapon",
+      "display_archetype": "XC90 P2 Nightrunner",
       "master_canvas": [
         1024,
         1024

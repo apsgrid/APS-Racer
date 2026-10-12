@@ -154,7 +154,7 @@ Runtime skin id `red_dirt` maps:
 Runtime skin id `brisbane_neon_rain` maps:
 - rwd_sport -> neon_gt
 - fwd_hatch -> neon_hot_hatch
-- awd_rally -> neon_awd
+- awd_rally -> neon_xc90_p2
 
 Changing skin may therefore change the visible vehicle body completely while preserving the underlying selected physics class.
 

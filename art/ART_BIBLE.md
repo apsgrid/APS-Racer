@@ -52,7 +52,7 @@ The current physics classes map to skin-specific visual archetypes:
 | --- | --- | --- |
 | RWD SPORT | Desert Prerunner | Neon GT Coupe |
 | FWD HATCH | Baja Compact | Neon Hot Hatch |
-| AWD RALLY | Monster 4x4 | Neon AWD Street Weapon |
+| AWD RALLY | Monster 4x4 | XC90 P2 Nightrunner |
 
 These are working art archetype names, not necessarily final in-game model names.
 
@@ -74,8 +74,8 @@ A tiny amount of form shading is permitted, but geometry must remain orthographi
 All six vehicle visuals must fit the current gameplay collision envelope closely enough that visual contact and physics contact feel coherent.
 
 Target visual envelope at nominal runtime scale:
-- length: 4.2–4.8 gameplay metres
-- width excluding exaggerated tyre sidewall: 1.8–2.2 gameplay metres
+- length: 4.2â€“4.8 gameplay metres
+- width excluding exaggerated tyre sidewall: 1.8â€“2.2 gameplay metres
 - visual overshoot beyond collision footprint: <= 12%
 - shadow overshoot may exceed body by <= 18%
 
@@ -99,11 +99,11 @@ Master canvas:
 - no baked background
 - vehicle aligned vertically in source with nose pointing up
 - vehicle centre of rotation exactly at canvas centre
-- body occupies approximately 76–84% of canvas height
+- body occupies approximately 76â€“84% of canvas height
 - minimum transparent margin 7% on every side
 
 Runtime downscale target:
-- nominal on-screen length 80–140 px depending on camera zoom
+- nominal on-screen length 80â€“140 px depending on camera zoom
 - all detail must survive at 96 px vehicle length
 
 Every vehicle package must include:
@@ -135,7 +135,7 @@ Red Dirt:
 Brisbane Neon Rain:
 - Neon GT Coupe: long-low two-door proportions
 - Neon Hot Hatch: short, upright rear, compact proportions
-- Neon AWD Street Weapon: low/wide sedan-shooting-brake/rally-super-saloon proportions
+- XC90 P2 Nightrunner: tall, boxy long-roof P2-era luxury SUV proportions with roof rails and strong vertical rear-light read
 
 ## 7. Red Dirt vehicle detail language
 
@@ -339,13 +339,13 @@ HUD must remain fully readable at:
 
 Minimum touch target:
 - 44 CSS px absolute minimum
-- 56–104 px preferred for driving controls
+- 56â€“104 px preferred for driving controls
 
 ## 14. UI style tokens
 
 Shared:
-- 8–12 px panel corner radius at 1280 x 720
-- 1–2 px border
+- 8â€“12 px panel corner radius at 1280 x 720
+- 1â€“2 px border
 - strong numeric hierarchy
 - no bevelled 2000s game UI
 - no skeuomorphic speedometer
@@ -459,13 +459,13 @@ Ghost must never be confused with:
 - checkpoint
 
 Specification:
-- 12–20% interior opacity
-- 45–60% outline opacity
+- 12â€“20% interior opacity
+- 45â€“60% outline opacity
 - skin primary accent
 - no shadow
 - no tyre spray/dust
 - no collision sparks
-- optional subtle 2–3 Hz opacity shimmer later
+- optional subtle 2â€“3 Hz opacity shimmer later
 
 ## 19. Rival visual
 
@@ -488,7 +488,7 @@ Countdown:
 
 GO:
 - same visual family as countdown
-- maximum on-screen emphasis around 700–900 ms
+- maximum on-screen emphasis around 700â€“900 ms
 
 Finish:
 - position
@@ -543,7 +543,7 @@ Vehicle shadows:
 - separate transparent layer
 - soft-edged
 - offset subtly down/right in source orientation
-- opacity 25–45%
+- opacity 25â€“45%
 - Red Dirt shadow slightly harder/drier
 - Brisbane shadow softer and darker against wet asphalt
 - do not bake shadow into body composite
@@ -686,7 +686,7 @@ Red Dirt environment:
 - 1 rut overlay
 - 3 scrub variants
 - 3 rock variants
-- 8–10 prop/barrier assets
+- 8â€“10 prop/barrier assets
 - 1 start/finish treatment
 - 1 checkpoint treatment
 - 2 dust VFX sprites/frames or equivalent procedural textures
@@ -696,13 +696,13 @@ Brisbane Neon Rain environment:
 - 3 puddle/reflection overlays
 - 2 lane marking types
 - 2 barrier types
-- 8–10 urban prop assets
+- 8â€“10 urban prop assets
 - 1 start/finish treatment
 - 1 checkpoint treatment
 - 2 spray/splash VFX sprites/frames or equivalent procedural textures
 
 Expected first-pass production set:
-approximately 80–95 individual runtime files before atlas consolidation.
+approximately 80â€“95 individual runtime files before atlas consolidation.
 
 ## 30. v0.6.0 definition of done
 
@@ -731,4 +731,4 @@ Not part of this asset pass:
 - cinematic camera
 - photorealism
 
-The target is a coherent, attractive, expandable 2D racing identity—not final AAA content.
+The target is a coherent, attractive, expandable 2D racing identityâ€”not final AAA content.

@@ -1,6 +1,121 @@
 class_name VisualRenderer
 extends RefCounted
 
+
+var _vehicle_texture_cache: Dictionary = {}
+var _asset_texture_cache: Dictionary = {}
+
+func _asset_texture(path: String) -> Texture2D:
+	if _asset_texture_cache.has(path):
+		return _asset_texture_cache[path]
+	var texture: Texture2D = null
+	if ResourceLoader.exists(path):
+		texture = load(path) as Texture2D
+	_asset_texture_cache[path] = texture
+	return texture
+
+func _ui_icon_texture(icon_id: String) -> Texture2D:
+	return _asset_texture("res://art/export/shared/ui/ui_icon_%s.svg" % icon_id)
+
+func _draw_world_asset(
+	canvas: CanvasItem,
+	path: String,
+	world_pos: Vector2,
+	world_to_screen: Callable,
+	ppm: float,
+	world_size: Vector2,
+	rotation: float = 0.0,
+	modulate: Color = Color.WHITE
+) -> void:
+	var texture: Texture2D = _asset_texture(path)
+	if texture == null:
+		return
+	var centre: Vector2 = world_to_screen.call(world_pos)
+	var size_px: Vector2 = world_size * ppm
+	canvas.draw_set_transform(centre, rotation, Vector2.ONE)
+	canvas.draw_texture_rect(texture, Rect2(-size_px * 0.5, size_px), false, modulate)
+	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_tiled_world_texture(
+	canvas: CanvasItem,
+	path: String,
+	world_rect: Rect2,
+	world_to_screen: Callable,
+	modulate: Color
+) -> void:
+	var texture: Texture2D = _asset_texture(path)
+	if texture == null:
+		return
+	var a: Vector2 = world_to_screen.call(world_rect.position)
+	var b: Vector2 = world_to_screen.call(world_rect.position + world_rect.size)
+	canvas.draw_texture_rect(texture, Rect2(a, b - a), true, modulate)
+
+func _vehicle_asset_id(theme_id: String, preset_index: int) -> String:
+	if theme_id == "red_dirt":
+		match preset_index:
+			1: return "baja_compact"
+			2: return "monster_4x4"
+			_: return "desert_prerunner"
+	match preset_index:
+		1: return "neon_hot_hatch"
+		2: return "neon_xc90_p2"
+		_: return "neon_gt"
+
+func _vehicle_texture(theme_id: String, preset_index: int) -> Texture2D:
+	var asset_id: String = _vehicle_asset_id(theme_id, preset_index)
+	var key: String = theme_id + ":" + asset_id
+	if _vehicle_texture_cache.has(key):
+		return _vehicle_texture_cache[key]
+	var path: String = "res://art/export/vehicles/%s/%s/%s_composite.png" % [theme_id, asset_id, asset_id]
+	var texture: Texture2D = null
+	if ResourceLoader.exists(path):
+		texture = load(path) as Texture2D
+	_vehicle_texture_cache[key] = texture
+	return texture
+
+func _vehicle_sprite_square_m(theme_id: String, preset_index: int) -> float:
+	if theme_id == "red_dirt":
+		if preset_index == 2:
+			return 6.10
+		if preset_index == 1:
+			return 5.45
+		return 5.85
+	if preset_index == 2:
+		return 5.95
+	if preset_index == 1:
+		return 5.20
+	return 5.55
+
+func _draw_asset_car(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	sim: VehicleSim,
+	world_to_screen: Callable,
+	ppm: float,
+	texture: Texture2D
+) -> void:
+	var screen_pos: Vector2 = world_to_screen.call(sim.position)
+	var square_px: float = ppm * _vehicle_sprite_square_m(theme.id(), sim.preset_index)
+
+	var shadow: Color = theme.colour("car_shadow")
+	shadow.a = 0.38
+	canvas.draw_set_transform(
+		screen_pos + Vector2(ppm * 0.14, ppm * 0.17),
+		sim.angle,
+		Vector2(1.0, 0.46)
+	)
+	canvas.draw_circle(Vector2.ZERO, square_px * 0.34, shadow)
+	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	canvas.draw_set_transform(screen_pos, sim.angle + PI * 0.5, Vector2.ONE)
+	canvas.draw_texture_rect(
+		texture,
+		Rect2(Vector2(-square_px * 0.5, -square_px * 0.5), Vector2(square_px, square_px)),
+		false,
+		Color.WHITE
+	)
+	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
 const RED_SCRUB: Array[Vector2] = [
 	Vector2(-46, -28), Vector2(-40, 27), Vector2(-30, -29), Vector2(-20, 28),
 	Vector2(-8, -28), Vector2(8, 29), Vector2(20, -30), Vector2(31, 28),
@@ -63,6 +178,14 @@ func _draw_red_dirt_environment(
 	world_to_screen: Callable,
 	ppm: float
 ) -> void:
+	_draw_tiled_world_texture(
+		canvas,
+		"res://art/export/skins/red_dirt/environment/rd_surface_loose.png",
+		Rect2(-70.0, -50.0, 140.0, 100.0),
+		world_to_screen,
+		Color(1.0, 1.0, 1.0, 0.48)
+	)
+
 	var patch_colour: Color = theme.colour("ground_dark")
 	patch_colour.a = 0.20
 	for i: int in range(14):
@@ -87,6 +210,11 @@ func _draw_red_dirt_environment(
 		canvas.draw_circle(pos, max(2.5, ppm * 0.16), rock)
 
 	_draw_red_dirt_props(canvas, theme, world_to_screen, ppm)
+	_draw_world_asset(canvas, "res://art/export/skins/red_dirt/environment/rd_shed.png", Vector2(-44.0, 24.0), world_to_screen, ppm, Vector2(6.0, 5.0), -0.08)
+	_draw_world_asset(canvas, "res://art/export/skins/red_dirt/environment/rd_barrier_tyre_stack.png", Vector2(43.0, -23.0), world_to_screen, ppm, Vector2(6.5, 3.2), 0.12)
+	_draw_world_asset(canvas, "res://art/export/skins/red_dirt/environment/rd_event_sign.png", Vector2(-42.5, -23.0), world_to_screen, ppm, Vector2(4.0, 4.0))
+	_draw_world_asset(canvas, "res://art/export/skins/red_dirt/environment/rd_scrub_a.png", Vector2(40.0, 25.0), world_to_screen, ppm, Vector2(4.0, 4.0))
+	_draw_world_asset(canvas, "res://art/export/skins/red_dirt/environment/rd_rock_a.png", Vector2(34.0, 26.0), world_to_screen, ppm, Vector2(3.4, 3.4))
 
 func _draw_red_dirt_props(
 	canvas: CanvasItem,
@@ -113,6 +241,14 @@ func _draw_neon_environment(
 	world_to_screen: Callable,
 	ppm: float
 ) -> void:
+	_draw_tiled_world_texture(
+		canvas,
+		"res://art/export/skins/brisbane_neon_rain/environment/bnr_surface_dark_wet.png",
+		Rect2(-70.0, -50.0, 140.0, 100.0),
+		world_to_screen,
+		Color(1.0, 1.0, 1.0, 0.58)
+	)
+
 	var building_fill: Color = Color("#080d17")
 	var building_edge: Color = Color("#172537")
 	for i: int in range(NEON_BUILDINGS.size()):
@@ -132,6 +268,9 @@ func _draw_neon_environment(
 			glow2.a = 0.16
 			canvas.draw_rect(Rect2(sr.position + Vector2(4, sr.size.y - 9), Vector2(max(4.0, sr.size.x - 8), 5)), glow2)
 
+	_draw_world_asset(canvas, "res://art/export/skins/brisbane_neon_rain/environment/bnr_billboard.png", Vector2(-43.5, -26.0), world_to_screen, ppm, Vector2(7.0, 3.5))
+	_draw_world_asset(canvas, "res://art/export/skins/brisbane_neon_rain/environment/bnr_neon_barrier.png", Vector2(39.5, 25.0), world_to_screen, ppm, Vector2(7.0, 3.4))
+	_draw_world_asset(canvas, "res://art/export/skins/brisbane_neon_rain/environment/bnr_light_pole.png", Vector2(45.5, -15.0), world_to_screen, ppm, Vector2(3.0, 6.0))
 	_draw_neon_sign(canvas, theme, world_to_screen.call(Vector2(-43.5, -26.0)), "BRISBANE", true)
 	_draw_neon_sign(canvas, theme, world_to_screen.call(Vector2(40.0, 25.0)), "02:00", false)
 	_draw_neon_sign(canvas, theme, world_to_screen.call(Vector2(45.5, -15.0)), "OPEN", true)
@@ -448,6 +587,11 @@ func draw_car(
 	world_to_screen: Callable,
 	ppm: float
 ) -> void:
+	var asset_texture: Texture2D = _vehicle_texture(theme.id(), sim.preset_index)
+	if asset_texture != null:
+		_draw_asset_car(canvas, theme, sim, world_to_screen, ppm, asset_texture)
+		return
+
 	var body: Array[Vector2] = _car_shape(sim.preset_index)
 	var shadow_points: PackedVector2Array = PackedVector2Array()
 	var body_points: PackedVector2Array = PackedVector2Array()
@@ -644,12 +788,12 @@ func draw_touch_controls(
 	_draw_round_button(canvas, theme, Rect2(rects["throttle"]), "GO", bool(active.get("throttle", false)), false)
 	_draw_small_button(canvas, theme, Rect2(rects["handbrake"]), "HANDBRAKE", bool(active.get("handbrake", false)))
 
-	_draw_small_button(canvas, theme, Rect2(rects["theme"]), "SKIN", false)
-	_draw_small_button(canvas, theme, Rect2(rects["course"]), "FIG 8" if course_name == "FIGURE 8" else "ROUND", false)
-	_draw_small_button(canvas, theme, Rect2(rects["data"]), "DATA", bool(active.get("data", false)))
-	_draw_small_button(canvas, theme, Rect2(rects["tune"]), "TUNE", bool(active.get("tune", false)))
-	_draw_small_button(canvas, theme, Rect2(rects["preset"]), "CAR", false)
-	_draw_small_button(canvas, theme, Rect2(rects["reset"]), "RESET", false)
+	_draw_small_button(canvas, theme, Rect2(rects["theme"]), "SKIN", false, "skin")
+	_draw_small_button(canvas, theme, Rect2(rects["course"]), "FIG 8" if course_name == "FIGURE 8" else "ROUND", false, "course")
+	_draw_small_button(canvas, theme, Rect2(rects["data"]), "DATA", bool(active.get("data", false)), "data")
+	_draw_small_button(canvas, theme, Rect2(rects["tune"]), "TUNE", bool(active.get("tune", false)), "tune")
+	_draw_small_button(canvas, theme, Rect2(rects["preset"]), "CAR", false, "car")
+	_draw_small_button(canvas, theme, Rect2(rects["reset"]), "RESET", false, "reset")
 
 func _draw_round_button(
 	canvas: CanvasItem,
@@ -673,17 +817,42 @@ func _draw_round_button(
 	var size: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
 	canvas.draw_string(font, centre + Vector2(-size.x * 0.5, size.y * 0.34), label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, theme.colour("ui_text"))
 
-func _draw_small_button(canvas: CanvasItem, theme: ThemeSystem, rect: Rect2, label: String, active: bool) -> void:
+func _draw_small_button(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	rect: Rect2,
+	label: String,
+	active: bool,
+	icon_id: String = ""
+) -> void:
 	var fill: Color = theme.colour("ui_panel")
 	fill.a = 0.68 if not active else 0.94
 	var border: Color = theme.colour("accent")
 	border.a = 0.50 if not active else 1.0
 	_draw_panel(canvas, rect, fill, border, 8, 2)
+
+	var icon: Texture2D = _ui_icon_texture(icon_id) if not icon_id.is_empty() else null
 	var font: Font = ThemeDB.fallback_font
-	var font_size: int = 12
-	var size: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
-	var pos: Vector2 = rect.get_center() + Vector2(-size.x * 0.5, size.y * 0.34)
-	canvas.draw_string(font, pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, theme.colour("ui_text"))
+	var font_size: int = 10 if icon != null else 12
+	var text_size: Vector2 = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+
+	if icon != null:
+		var icon_size: float = min(18.0, rect.size.y * 0.42)
+		var content_width: float = icon_size + 6.0 + text_size.x
+		var start_x: float = rect.get_center().x - content_width * 0.5
+		var icon_rect: Rect2 = Rect2(
+			Vector2(start_x, rect.get_center().y - icon_size * 0.5),
+			Vector2(icon_size, icon_size)
+		)
+		canvas.draw_texture_rect(icon, icon_rect, false, theme.colour("ui_text"))
+		var pos: Vector2 = Vector2(
+			start_x + icon_size + 6.0,
+			rect.get_center().y + text_size.y * 0.34
+		)
+		canvas.draw_string(font, pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, theme.colour("ui_text"))
+	else:
+		var pos2: Vector2 = rect.get_center() + Vector2(-text_size.x * 0.5, text_size.y * 0.34)
+		canvas.draw_string(font, pos2, label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, theme.colour("ui_text"))
 
 func _draw_panel(
 	canvas: CanvasItem,

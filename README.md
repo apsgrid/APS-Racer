@@ -2,9 +2,9 @@
 
 Top-down racing prototype built in Godot 4.7.2 with a custom four-wheel vehicle simulation.
 
-## Current milestone: multi-course race build
+## Current milestone: production art build
 
-The game now combines the custom handling model, two selectable physical course layouts, reskinnable presentation layer, compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and a first AI opponent in a complete three-lap event.
+The game now combines the custom handling model, two selectable physical course layouts, skin-specific production vehicle art, textured/prop-driven environments, shared icon assets, compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and a first AI opponent in a complete three-lap event.
 
 ### Physics
 
@@ -22,13 +22,25 @@ The game now combines the custom handling model, two selectable physical course 
 
 ### Cars
 
-Press 1/2/3, D-pad left/right, or the CAR touch button to switch between:
+Press 1/2/3, D-pad left/right, or the CAR touch button to switch physics classes:
 
 1. RWD Sport
 2. FWD Hatch
 3. AWD Rally
 
-These use the same physics code with different vehicle parameters and drivetrain torque distribution.
+The visible vehicle is skin-specific while the underlying physics class remains unchanged.
+
+**Red Dirt**
+- RWD Sport -> Desert Prerunner
+- FWD Hatch -> Baja Compact
+- AWD Rally -> Monster 4x4
+
+**Brisbane Neon Rain**
+- RWD Sport -> Neon GT Coupe
+- FWD Hatch -> Neon Hot Hatch
+- AWD Rally -> XC90 P2 Nightrunner
+
+The six runtime composites are true top-down sprites with transparent backgrounds. Procedural cars remain only as a fallback if an art asset is missing.
 
 ### Courses
 
@@ -57,17 +69,20 @@ Press **G** or tap **SKIN** to switch the presentation without changing the trac
 
 **Red Dirt**
 - Broken Hill / Silverton influence
-- packed red-earth racing surface
-- loose-dirt runoff
-- ochre terrain, scrub, rocks, fence posts and dust
+- Desert Prerunner / Baja Compact / Monster 4x4 vehicle family
+- packed red-earth and loose-dirt texture assets
+- tyre/rut treatment plus scrub, rocks, shed, signage and barrier props
+- dust VFX assets
 - rugged warm UI treatment
 
 **Brisbane Neon Rain**
 - Brisbane at about 02:00
 - permanently raining
-- wet asphalt and road spray
+- Neon GT / Hot Hatch / XC90 P2 Nightrunner vehicle family
+- wet-asphalt, puddle, reflection and lane-marking assets
+- neon barriers, urban props and road furniture
+- wet spray/splash VFX assets
 - neon cyan/magenta edges and reflections
-- city-block/signage treatment
 - dark translucent cyberpunk UI
 
 Skin definitions live in `themes.json`. Rendering is isolated in `visual_renderer.gd`; physics remains in `vehicle_sim.gd`, and track geometry/collision remains in `track_model.gd`. A new skin should therefore be data plus optional renderer rules rather than a rewrite of game logic.
@@ -195,7 +210,7 @@ v0.4.1 fixes a Web renderer memory leak introduced by rebuilding static scenery 
 - AI ghost recording is disabled
 - player ghost recording is hard-capped at 5,400 samples / 180 seconds
 
-Measured in a clean Chrome process tree, the renderer previously climbed continuously; after the fix it remained around 359–377 MB over a 60-second run and ended below its starting sample.
+Measured in a clean Chrome process tree, the renderer previously climbed continuously; after the fix it remained around 359-377 MB over a 60-second run and ended below its starting sample. The v0.6.0 production-art build was also stress-tested by repeatedly switching all six cars and both skins: renderer memory started at about 390 MB, briefly peaked around 462 MB while textures were being exercised, and returned to about 414 MB at 60 seconds with no linear growth.
 
 ## Platform strategy
 
@@ -230,15 +245,15 @@ The v0.6.0 art pass is specified under `art/`.
 Key rule: vehicle appearance is skin-specific while handling classes remain shared.
 
 - Red Dirt: RWD SPORT -> Desert Prerunner; FWD HATCH -> Baja Compact; AWD RALLY -> Monster 4x4
-- Brisbane Neon Rain: RWD SPORT -> Neon GT Coupe; FWD HATCH -> Neon Hot Hatch; AWD RALLY -> Neon AWD Street Weapon
+- Brisbane Neon Rain: RWD SPORT -> Neon GT Coupe; FWD HATCH -> Neon Hot Hatch; AWD RALLY -> XC90 P2 Nightrunner
 
-The production manifest currently defines 124 runtime art files: 115 required and 9 optional.
+The production manifest defines 124 runtime art files: 115 required and 9 optional. The v0.6.0 build currently has 121 files present, with all 115 required assets present and validated; the remaining three are optional overlays.
 
-Use:
+Every normal build now runs:
 
-    py tools/validate_art_assets.py --allow-missing
+    py tools/validate_art_assets.py
 
-during production, then remove `--allow-missing` for final asset validation.
+before the handling and race regression suites. `--allow-missing` remains available only for future art-development branches.
 
 See:
 - `art/ART_BIBLE.md`

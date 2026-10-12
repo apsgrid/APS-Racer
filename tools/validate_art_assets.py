@@ -106,7 +106,7 @@ def main():
         return 2
 
     try:
-        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8-sig"))
     except Exception as exc:
         print(f"ERROR: invalid manifest: {exc}")
         return 2

@@ -4,10 +4,10 @@ This directory is the production contract for the v0.6.0 visual asset pass.
 
 Read in this order:
 
-1. `ART_BIBLE.md` — visual language, dimensions, acceptance rules, skin-specific vehicle direction.
-2. `GENERATION_BRIEFS.md` — prompts/commissioning briefs for the six vehicles, two environments and UI.
-3. `INTEGRATION_CONTRACT.md` — exact paths, naming, orientation, compositing and Godot integration rules.
-4. `asset_manifest.json` — machine-readable list of required runtime assets.
+1. `ART_BIBLE.md` â€” visual language, dimensions, acceptance rules, skin-specific vehicle direction.
+2. `GENERATION_BRIEFS.md` â€” prompts/commissioning briefs for the six vehicles, two environments and UI.
+3. `INTEGRATION_CONTRACT.md` â€” exact paths, naming, orientation, compositing and Godot integration rules.
+4. `asset_manifest.json` â€” machine-readable list of required runtime assets.
 
 Current production contract:
 - 6 skin-specific vehicle packages
@@ -25,7 +25,7 @@ Red Dirt vehicle family:
 Brisbane Neon Rain vehicle family:
 - RWD SPORT -> Neon GT Coupe
 - FWD HATCH -> Neon Hot Hatch
-- AWD RALLY -> Neon AWD Street Weapon
+- AWD RALLY -> XC90 P2 Nightrunner
 
 Run the pre-production validator with:
 
