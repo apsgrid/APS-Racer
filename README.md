@@ -2,9 +2,9 @@
 
 Top-down racing prototype built in Godot 4.7.2 with a custom four-wheel vehicle simulation.
 
-## Current milestone: production art build
+## Overview
 
-The game now combines the custom handling model, two selectable physical course layouts, skin-specific production vehicle art, textured/prop-driven environments, shared icon assets, compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and a first AI opponent in a complete three-lap event.
+APS Racer combines a custom handling model, two selectable physical course layouts, skin-specific production vehicle art, textured/prop-driven environments, shared icon assets, a compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and an AI opponent in a complete three-lap event.
 
 ### Physics
 
@@ -202,15 +202,14 @@ The Web export has been smoke-tested in Chrome with WebGL 2 and the Compatibilit
 
 ### Web memory stability
 
-v0.4.1 fixes a Web renderer memory leak introduced by rebuilding static scenery and ambient weather with immediate-mode draw commands every frame.
+The Web presentation path is designed to remain bounded during long sessions:
 
-- static world geometry is now retained in `static_world_layer.gd` and only redrawn when the active skin changes
+- static world geometry is retained in `static_world_layer.gd` and only redrawn when the active skin changes
 - weather is retained in `weather_layer.gd` and animated by transform rather than rebuilding particles/lines every frame
 - track/racing-line geometry is cached
 - AI ghost recording is disabled
 - player ghost recording is hard-capped at 5,400 samples / 180 seconds
-
-Measured in a clean Chrome process tree, the renderer previously climbed continuously; after the fix it remained around 359-377 MB over a 60-second run and ended below its starting sample. The v0.6.0 production-art build was also stress-tested by repeatedly switching all six cars and both skins: renderer memory started at about 390 MB, briefly peaked around 462 MB while textures were being exercised, and returned to about 414 MB at 60 seconds with no linear growth.
+- vehicle and skin textures are cached and reused rather than recreated each frame
 
 ## Platform strategy
 
@@ -240,14 +239,14 @@ This separation is intentional preparation for future map-derived tracks: a road
 
 ## Art production contract
 
-The v0.6.0 art pass is specified under `art/`.
+The production art specification lives under `art/`.
 
 Key rule: vehicle appearance is skin-specific while handling classes remain shared.
 
 - Red Dirt: RWD SPORT -> Desert Prerunner; FWD HATCH -> Baja Compact; AWD RALLY -> Monster 4x4
 - Brisbane Neon Rain: RWD SPORT -> Neon GT Coupe; FWD HATCH -> Neon Hot Hatch; AWD RALLY -> XC90 P2 Nightrunner
 
-The production manifest defines 124 runtime art files: 115 required and 9 optional. The v0.6.0 build currently has 121 files present, with all 115 required assets present and validated; the remaining three are optional overlays.
+The production manifest defines the required and optional runtime art files. Required assets are validated automatically as part of the normal build.
 
 Every normal build now runs:
 
@@ -261,7 +260,7 @@ See:
 - `art/INTEGRATION_CONTRACT.md`
 - `art/asset_manifest.json`
 
-## Next gameplay milestones
+## Roadmap
 
 1. Tune the three cars by feel on keyboard/gamepad/touch and bake the preferred baselines.
 2. Improve AI racecraft: overtaking, defensive lines and difficulty levels.
