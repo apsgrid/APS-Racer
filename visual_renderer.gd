@@ -927,6 +927,7 @@ func draw_hud(
 	canvas.draw_string(font, Vector2(34, 113), speed_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 44, text)
 	canvas.draw_string(font, Vector2(142, 108), "KM/H", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, muted)
 	canvas.draw_string(font, Vector2(142, 128), sim.gear_label(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, theme.colour("accent2"))
+	canvas.draw_string(font, Vector2(142, 148), "ABS ON" if sim.abs_enabled else "ABS OFF", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, theme.colour("accent2") if sim.abs_enabled else theme.colour("danger"))
 
 	var stat_x: float = 222.0
 	canvas.draw_string(font, Vector2(stat_x, 86), "LAT  %+.2f G" % (sim.last_lat_accel / 9.81), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, muted)
@@ -981,7 +982,7 @@ func _draw_telemetry_panel(
 		"RL %+.1f deg  %3.0f%% grip" % [sim.wheel_slip_angles[2], sim.wheel_grip_usage[2] * 100.0],
 		"RR %+.1f deg  %3.0f%% grip" % [sim.wheel_slip_angles[3], sim.wheel_grip_usage[3] * 100.0],
 		"Mass %.0f kg   Grip %.2f mu" % [sim.mass, sim.base_tyre_mu],
-		"Drive %.0f%% front   Brake %.0f%% front" % [sim.drive_front_fraction * 100.0, sim.front_brake_bias * 100.0],
+		"Engine brake %.0f N   %s" % [sim.engine_brake_force, "ABS ON" if sim.abs_enabled else "ABS OFF"],
 		"Controller: " + joy_name
 	]
 	for i: int in range(lines.size()):
@@ -996,7 +997,9 @@ func draw_touch_controls(
 	course_name: String,
 	weather_enabled: bool,
 	manual_mode: bool,
-	gear_label: String
+	gear_label: String,
+	time_trial: bool,
+	abs_enabled: bool
 ) -> void:
 	if not show_touch:
 		return
@@ -1017,6 +1020,9 @@ func draw_touch_controls(
 	_draw_small_button(canvas, theme, Rect2(rects["tune"]), "TUNE", bool(active.get("tune", false)), "tune")
 	_draw_small_button(canvas, theme, Rect2(rects["preset"]), "CAR", false, "car")
 	_draw_small_button(canvas, theme, Rect2(rects["reset"]), "RESET", false, "reset")
+
+	_draw_small_button(canvas, theme, Rect2(rects["mode"]), "TIME" if time_trial else "RACE", time_trial)
+	_draw_small_button(canvas, theme, Rect2(rects["abs"]), "ABS ON" if abs_enabled else "ABS OFF", abs_enabled)
 
 	if manual_mode:
 		_draw_small_button(canvas, theme, Rect2(rects["shift_down"]), "GEAR -", false)
@@ -1177,7 +1183,8 @@ func draw_race_hud(
 	theme: ThemeSystem,
 	race: RaceSystem,
 	position_rank: int,
-	ai_race: RaceSystem
+	ai_race: RaceSystem,
+	time_trial: bool = false
 ) -> void:
 	var font: Font = ThemeDB.fallback_font
 	var bg: Color = theme.colour("ui_panel")
@@ -1191,22 +1198,35 @@ func draw_race_hud(
 	var rect: Rect2 = Rect2(430, 18, 332, 142)
 	_draw_panel(canvas, rect, bg, border, 10, 2)
 
-	canvas.draw_string(font, Vector2(448, 45), "P%d / 2" % position_rank, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, accent)
-	canvas.draw_string(font, Vector2(544, 45), "LAP %d / %d" % [min(race.current_lap, race.total_laps), race.total_laps], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text)
+	if time_trial:
+		canvas.draw_string(font, Vector2(448, 45), "TIME TRIAL", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, accent)
+		canvas.draw_string(font, Vector2(590, 45), "LAP %d" % race.current_lap, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text)
+	else:
+		canvas.draw_string(font, Vector2(448, 45), "P%d / 2" % position_rank, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, accent)
+		canvas.draw_string(font, Vector2(544, 45), "LAP %d / %d" % [min(race.current_lap, race.total_laps), race.total_laps], HORIZONTAL_ALIGNMENT_LEFT, -1, 16, text)
 
 	var lap_value: String = race.format_time(race.lap_elapsed) if race.state != "countdown" else "--:--.---"
-	canvas.draw_string(font, Vector2(448, 78), lap_value, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, text)
+	var lap_colour: Color = text if race.lap_valid else theme.colour("danger")
+	canvas.draw_string(font, Vector2(448, 78), lap_value, HORIZONTAL_ALIGNMENT_LEFT, -1, 28, lap_colour)
 
 	canvas.draw_string(font, Vector2(448, 102), "BEST  " + race.format_time(race.best_lap_time), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, muted)
-	canvas.draw_string(font, Vector2(448, 122), "LAST  " + race.format_time(race.last_lap_time), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, muted)
+	var last_text: String = race.format_time(race.last_lap_time)
+	if race.last_lap_time > 0.0 and not race.last_lap_valid:
+		last_text = "VOID  " + last_text
+	canvas.draw_string(font, Vector2(448, 122), "LAST  " + last_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, theme.colour("danger") if race.last_lap_time > 0.0 and not race.last_lap_valid else muted)
 
 	var ghost_text: String = "GHOST ON" if race.best_ghost.size() > 1 else "NO GHOST YET"
 	canvas.draw_string(font, Vector2(638, 102), ghost_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, theme.colour("accent"))
 
 	var sector_number: int = 4 if race.next_checkpoint == 0 else race.next_checkpoint
 	canvas.draw_string(font, Vector2(638, 122), "S%d  %s" % [sector_number, race.format_time(race.last_sector_time)], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, muted)
-	var rival_lap: int = min(ai_race.current_lap, ai_race.total_laps)
-	canvas.draw_string(font, Vector2(638, 138), "RIVAL L%d" % rival_lap, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, muted)
+	if not race.lap_valid:
+		canvas.draw_string(font, Vector2(638, 138), "LAP VOID", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, theme.colour("danger"))
+	elif time_trial:
+		canvas.draw_string(font, Vector2(638, 138), "VALID LAP", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, theme.colour("success"))
+	else:
+		var rival_lap: int = min(ai_race.current_lap, ai_race.total_laps)
+		canvas.draw_string(font, Vector2(638, 138), "RIVAL L%d" % rival_lap, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, muted)
 
 	if race.state == "countdown":
 		var label: String = race.countdown_text()

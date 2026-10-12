@@ -13,7 +13,7 @@ const FALLBACK_PRESETS = [
 		"values": {
 			"mass": 1240.0, "inertia": 1850.0, "wheelbase": 2.55, "track_width": 1.58,
 			"cg_height": 0.52, "front_weight_fraction": 0.55, "drive_front_fraction": 0.0,
-			"max_engine_force": 6500.0, "reverse_force": 7200.0, "max_brake_force": 15500.0,
+			"max_engine_force": 6500.0, "reverse_force": 7200.0, "engine_brake_force": 1850.0, "max_brake_force": 15500.0,
 			"front_brake_bias": 0.62, "base_tyre_mu": 1.65, "corner_stiffness": 3900.0,
 			"yaw_damping": 1100.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
 			"max_steer_low": 0.58, "max_steer_high": 0.18, "steering_rate": 2.8,
@@ -25,7 +25,7 @@ const FALLBACK_PRESETS = [
 		"values": {
 			"mass": 1120.0, "inertia": 1580.0, "wheelbase": 2.45, "track_width": 1.54,
 			"cg_height": 0.56, "front_weight_fraction": 0.62, "drive_front_fraction": 1.0,
-			"max_engine_force": 5600.0, "reverse_force": 7000.0, "max_brake_force": 14800.0,
+			"max_engine_force": 5600.0, "reverse_force": 7000.0, "engine_brake_force": 1650.0, "max_brake_force": 14800.0,
 			"front_brake_bias": 0.67, "base_tyre_mu": 1.60, "corner_stiffness": 3800.0,
 			"yaw_damping": 1220.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
 			"max_steer_low": 0.58, "max_steer_high": 0.18, "steering_rate": 2.8,
@@ -37,7 +37,7 @@ const FALLBACK_PRESETS = [
 		"values": {
 			"mass": 1320.0, "inertia": 1980.0, "wheelbase": 2.58, "track_width": 1.61,
 			"cg_height": 0.58, "front_weight_fraction": 0.54, "drive_front_fraction": 0.48,
-			"max_engine_force": 7000.0, "reverse_force": 7400.0, "max_brake_force": 15800.0,
+			"max_engine_force": 7000.0, "reverse_force": 7400.0, "engine_brake_force": 2050.0, "max_brake_force": 15800.0,
 			"front_brake_bias": 0.60, "base_tyre_mu": 1.68, "corner_stiffness": 3900.0,
 			"yaw_damping": 1050.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
 			"max_steer_low": 0.58, "max_steer_high": 0.18, "steering_rate": 2.8,
@@ -49,7 +49,7 @@ const FALLBACK_PRESETS = [
 const TUNABLE_KEYS = [
 	"mass", "inertia", "wheelbase", "track_width", "cg_height",
 	"front_weight_fraction", "drive_front_fraction", "max_engine_force",
-	"reverse_force", "max_brake_force", "front_brake_bias", "base_tyre_mu",
+	"reverse_force", "engine_brake_force", "max_brake_force", "front_brake_bias", "base_tyre_mu",
 	"corner_stiffness", "yaw_damping", "aero_drag", "rolling_resistance",
 	"max_steer_low", "max_steer_high", "steering_rate", "handbrake_force",
 	"handbrake_grip_scale"
@@ -65,6 +65,7 @@ var preset_index: int = 0
 var preset_name: String = "RWD SPORT"
 var transmission_manual: bool = false
 var current_gear: int = 1
+var abs_enabled: bool = true
 
 var mass: float = 1240.0
 var inertia: float = 1850.0
@@ -76,6 +77,7 @@ var drive_front_fraction: float = 0.0
 
 var max_engine_force: float = 7200.0
 var reverse_force: float = 4200.0
+var engine_brake_force: float = 1850.0
 var max_brake_force: float = 15500.0
 var front_brake_bias: float = 0.62
 var base_tyre_mu: float = 1.12
@@ -194,6 +196,7 @@ func tuning_schema() -> Array[Dictionary]:
 		{"key":"drive_front_fraction", "label":"Drive to front", "min":0.0, "max":100.0, "step":1.0, "unit":"%", "scale":100.0},
 		{"key":"max_engine_force", "label":"Engine force", "min":3000.0, "max":12000.0, "step":100.0, "unit":"N"},
 		{"key":"reverse_force", "label":"Reverse force", "min":1500.0, "max":9000.0, "step":100.0, "unit":"N"},
+		{"key":"engine_brake_force", "label":"Engine braking", "min":0.0, "max":4000.0, "step":50.0, "unit":"N"},
 		{"key":"max_brake_force", "label":"Brake force", "min":8000.0, "max":24000.0, "step":250.0, "unit":"N"},
 		{"key":"front_brake_bias", "label":"Front brake bias", "min":45.0, "max":80.0, "step":0.5, "unit":"%", "scale":100.0},
 		{"key":"base_tyre_mu", "label":"Tyre grip", "min":0.70, "max":2.50, "step":0.01, "unit":"mu"},
@@ -233,6 +236,13 @@ func set_manual_transmission(enabled: bool) -> void:
 func toggle_manual_transmission() -> bool:
 	set_manual_transmission(not transmission_manual)
 	return transmission_manual
+
+func set_abs_enabled(enabled: bool) -> void:
+	abs_enabled = enabled
+
+func toggle_abs() -> bool:
+	abs_enabled = not abs_enabled
+	return abs_enabled
 
 func shift_up() -> void:
 	if transmission_manual:
@@ -337,12 +347,19 @@ func step(dt: float, throttle: float, brake: float, steer_input: float, handbrak
 		var axle_drive_fraction: float = drive_front_fraction if is_front else (1.0 - drive_front_fraction)
 		if throttle > 0.0:
 			requested_long += throttle * max_engine_force * drive_scale * axle_drive_fraction * 0.5
+		elif brake < 0.05 and not reversing and body_forward_speed > 0.8:
+			var gear_brake_scale: float = 0.92
+			if transmission_manual:
+				gear_brake_scale = clamp(1.48 - float(current_gear - 1) * 0.15, 0.68, 1.48)
+			var speed_brake_scale: float = clamp(body_forward_speed / 7.0, 0.22, 1.0)
+			requested_long -= engine_brake_force * gear_brake_scale * speed_brake_scale * axle_drive_fraction * 0.5
 		if reversing:
 			var reverse_kph: float = max(-body_forward_speed * 3.6, 0.0)
 			var reverse_taper: float = clamp((REVERSE_MAX_KPH - reverse_kph) / 12.0, 0.0, 1.0)
 			requested_long -= brake * reverse_force * reverse_taper * axle_drive_fraction * 0.5
 
-		if brake > 0.0 and not reversing:
+		var hard_braking: bool = brake > 0.0 and not reversing
+		if hard_braking:
 			var axle_brake: float = max_brake_force * (front_brake_bias if is_front else (1.0 - front_brake_bias))
 			var ref_speed: float = long_speed if abs(long_speed) > 0.15 else body_forward_speed
 			requested_long += -sign(ref_speed) * brake * axle_brake * 0.5
@@ -351,13 +368,21 @@ func step(dt: float, throttle: float, brake: float, steer_input: float, handbrak
 			var hand_ref: float = long_speed if abs(long_speed) > 0.1 else body_forward_speed
 			requested_long += -sign(hand_ref) * handbrake_force
 
-		var long_force: float = clamp(requested_long, -max_grip, max_grip)
-		var lateral_capacity: float = sqrt(max(max_grip * max_grip - long_force * long_force, 0.0))
+		var effective_grip: float = max_grip
+		if hard_braking and abs(long_speed) > 1.8:
+			if abs_enabled:
+				var abs_limit: float = max_grip * 0.86
+				requested_long = clamp(requested_long, -abs_limit, abs_limit)
+			elif brake > 0.62 and abs(requested_long) > max_grip * 0.94:
+				effective_grip *= 0.68
+
+		var long_force: float = clamp(requested_long, -effective_grip, effective_grip)
+		var lateral_capacity: float = sqrt(max(effective_grip * effective_grip - long_force * long_force, 0.0))
 		var requested_lat: float = -lat_speed * corner_stiffness
 		var lat_force: float = clamp(requested_lat, -lateral_capacity, lateral_capacity)
 
 		wheel_slip_angles[i] = rad_to_deg(atan2(lat_speed, abs(long_speed) + 0.35))
-		wheel_grip_usage[i] = Vector2(long_force, lat_force).length() / max_grip
+		wheel_grip_usage[i] = Vector2(long_force, lat_force).length() / max(effective_grip, 1.0)
 		var force: Vector2 = wheel_forward * long_force + wheel_right * lat_force
 		net_force += force
 		net_torque += r.cross(force)

@@ -7,6 +7,8 @@ func _init() -> void:
 	_test_checkpoint_order_and_laps()
 	_test_ghost_playback()
 	_test_ghost_memory_cap()
+	_test_time_trial_void_lap()
+	_test_track_limit_wheel_count()
 	_test_dynamic_dry_line()
 	_test_ai_driver()
 
@@ -149,3 +151,67 @@ func _run_ai_course(course_index: int, max_time: float, minimum_on_road: float) 
 	_assert(ai_race.finish_time < max_time, "AI completed %s too slowly for the baseline." % track.course_name())
 	_assert(ratio > minimum_on_road, "AI spent too much of %s off road." % track.course_name())
 	print("AI %s | finish %s | on-road %.0f%% | speed %.1f km/h" % [track.course_name(), ai_race.format_time(ai_race.finish_time), ratio * 100.0, ai.sim.speed_kph()])
+
+func _test_time_trial_void_lap() -> void:
+	var track: TrackModel = TrackModel.new()
+	var race: RaceSystem = RaceSystem.new(false, true)
+	race.configure("tt-test", 1, true)
+	race.restart()
+	race.step(3.30, Vector2(-3.0, 15.0), 0.0, track)
+
+	# First lap is valid and should establish the ghost/best.
+	for gate in [
+		[1.0, Vector2(30.0, 0.0), -PI * 0.5],
+		[1.0, Vector2(0.0, -16.0), PI],
+		[1.0, Vector2(-30.0, 0.0), PI * 0.5],
+		[1.0, Vector2(0.0, 16.0), 0.0]
+	]:
+		race.step(float(gate[0]), Vector2(gate[1]), float(gate[2]), track)
+	var valid_best: float = race.best_lap_time
+	var valid_ghost_size: int = race.best_ghost.size()
+	_assert(race.state == "racing", "Time Trial should continue after completing a lap.")
+	_assert(race.current_lap == 2, "Time Trial did not advance to lap 2.")
+	_assert(valid_best > 0.0, "Time Trial valid lap did not set a best time.")
+	_assert(valid_ghost_size > 1, "Time Trial valid lap did not set a ghost.")
+
+	# Second lap is faster but invalid, so it must not replace the record or ghost.
+	race.invalidate_current_lap("TRACK LIMITS")
+	for gate in [
+		[0.7, Vector2(30.0, 0.0), -PI * 0.5],
+		[0.7, Vector2(0.0, -16.0), PI],
+		[0.7, Vector2(-30.0, 0.0), PI * 0.5],
+		[0.7, Vector2(0.0, 16.0), 0.0]
+	]:
+		race.step(float(gate[0]), Vector2(gate[1]), float(gate[2]), track)
+	_assert(race.state == "racing", "Time Trial incorrectly finished after a void lap.")
+	_assert(race.current_lap == 3, "Time Trial did not continue after a void lap.")
+	_assert(not race.last_lap_valid, "Void lap was not marked invalid.")
+	_assert(abs(race.best_lap_time - valid_best) < 0.001, "Void lap overwrote the Time Trial best.")
+	_assert(race.best_ghost.size() == valid_ghost_size, "Void lap overwrote the Time Trial ghost.")
+	print("Time Trial | valid best %s | void lap %s | ghost retained %d" % [
+		race.format_time(valid_best),
+		race.format_time(race.last_lap_time),
+		race.best_ghost.size()
+	])
+
+func _test_track_limit_wheel_count() -> void:
+	var track: TrackModel = TrackModel.new()
+	var car: VehicleSim = VehicleSim.new()
+	car.set_preset(0)
+	car.angle = 0.0
+
+	var saw_two: bool = false
+	var saw_three_or_more: bool = false
+	var trigger_y: float = 0.0
+	for step: int in range(0, 100):
+		car.position = Vector2(0.0, 15.0 + float(step) * 0.10)
+		var off: int = track.off_track_wheel_count(car)
+		if off == 2:
+			saw_two = true
+		if off > 2:
+			saw_three_or_more = true
+			trigger_y = car.position.y
+			break
+	_assert(saw_two, "Track-limit scan never observed exactly two wheels off.")
+	_assert(saw_three_or_more, "Track-limit scan never observed more than two wheels off.")
+	print("Track limits | 2 wheels allowed | void threshold reached near y=%.2f" % trigger_y)

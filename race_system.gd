@@ -7,6 +7,7 @@ const MAX_GHOST_SECONDS: float = 180.0
 const MAX_GHOST_SAMPLES: int = 5400
 
 var total_laps: int = 3
+var continuous_mode: bool = false
 var state: String = "countdown"
 var countdown: float = 3.25
 var current_lap: int = 1
@@ -23,6 +24,9 @@ var event_message: String = ""
 var event_message_time: float = 0.0
 var finish_time: float = 0.0
 var paused: bool = false
+var lap_valid: bool = true
+var last_lap_valid: bool = true
+var invalid_reason: String = ""
 
 var race_key: String = "default"
 var persistence_enabled: bool = true
@@ -36,9 +40,10 @@ func _init(enable_persistence: bool = true, enable_ghost_recording: bool = true)
 	persistence_enabled = enable_persistence
 	ghost_recording_enabled = enable_ghost_recording
 
-func configure(key: String, laps: int = 3) -> void:
+func configure(key: String, laps: int = 3, continuous: bool = false) -> void:
 	race_key = key
 	total_laps = max(laps, 1)
+	continuous_mode = continuous
 	_load_record()
 
 func restart() -> void:
@@ -55,6 +60,9 @@ func restart() -> void:
 	event_message = "GET READY"
 	event_message_time = 1.0
 	finish_time = 0.0
+	lap_valid = true
+	last_lap_valid = true
+	invalid_reason = ""
 	current_ghost.clear()
 	ghost_sample_accumulator = 0.0
 	ghost_overflowed = false
@@ -71,6 +79,14 @@ func is_finished() -> bool:
 
 func controls_locked() -> bool:
 	return state == "countdown" or state == "finished"
+
+func invalidate_current_lap(reason: String = "TRACK LIMITS") -> void:
+	if state != "racing" or not lap_valid:
+		return
+	lap_valid = false
+	invalid_reason = reason
+	event_message = "LAP VOID  " + reason
+	event_message_time = 1.6
 
 func step(dt: float, position: Vector2, angle: float, track: TrackModel) -> void:
 	if paused:
@@ -123,7 +139,7 @@ func _cross_gate(gate_index: int, position: Vector2, angle: float) -> void:
 
 	var sector_time: float = max(lap_elapsed - sector_start_time, 0.0)
 	last_sector_time = sector_time
-	if best_sector_times[sector_index] <= 0.0 or sector_time < best_sector_times[sector_index]:
+	if lap_valid and (best_sector_times[sector_index] <= 0.0 or sector_time < best_sector_times[sector_index]):
 		best_sector_times[sector_index] = sector_time
 	sector_start_time = lap_elapsed
 
@@ -140,7 +156,8 @@ func _cross_gate(gate_index: int, position: Vector2, angle: float) -> void:
 
 func _complete_lap(position: Vector2, angle: float) -> void:
 	last_lap_time = lap_elapsed
-	var new_best: bool = best_lap_time <= 0.0 or last_lap_time < best_lap_time
+	last_lap_valid = lap_valid
+	var new_best: bool = lap_valid and (best_lap_time <= 0.0 or last_lap_time < best_lap_time)
 	if new_best:
 		best_lap_time = last_lap_time
 		if ghost_recording_enabled and not ghost_overflowed:
@@ -151,11 +168,16 @@ func _complete_lap(position: Vector2, angle: float) -> void:
 			best_ghost.clear()
 		_save_record()
 
-	event_message = ("NEW BEST  " if new_best else "LAP  ") + format_time(last_lap_time)
+	if not lap_valid:
+		event_message = "LAP VOID  " + format_time(last_lap_time)
+	elif new_best:
+		event_message = "NEW BEST  " + format_time(last_lap_time)
+	else:
+		event_message = "LAP  " + format_time(last_lap_time)
 	event_message_time = 2.0
 	completed_checkpoints += 1
 
-	if current_lap >= total_laps:
+	if not continuous_mode and current_lap >= total_laps:
 		state = "finished"
 		finish_time = race_elapsed
 		event_message = "FINISH  " + format_time(finish_time)
@@ -169,6 +191,8 @@ func _start_lap(position: Vector2, angle: float) -> void:
 	lap_elapsed = 0.0
 	sector_start_time = 0.0
 	next_checkpoint = 1
+	lap_valid = true
+	invalid_reason = ""
 	current_ghost.clear()
 	ghost_sample_accumulator = 0.0
 	ghost_overflowed = false

@@ -21,6 +21,7 @@ var touches: Dictionary = {}
 var visual_time: float = 0.0
 var telemetry_open: bool = false
 var weather_effects_enabled: bool = true
+var event_mode: String = "race"
 var haptic_cooldown: float = 0.0
 
 var skid_points: Array[Vector2] = []
@@ -70,25 +71,29 @@ func _physics_process(delta: float) -> void:
 				bool(controls["handbrake"]),
 				track.surface_mu
 			)
+			_update_track_limits()
 			track.resolve_barriers(sim)
 
-			ai_driver.step(SIM_DT, ai_race.is_racing(), track)
-			_resolve_car_collision()
+			if event_mode == "race":
+				ai_driver.step(SIM_DT, ai_race.is_racing(), track)
+				_resolve_car_collision()
 			if race.is_racing():
 				var dry_line_traffic: Array[Vector2] = []
 				if sim.speed_kph() > 8.0:
 					dry_line_traffic.append(sim.position)
-				if ai_driver.sim.speed_kph() > 8.0:
+				if event_mode == "race" and ai_driver.sim.speed_kph() > 8.0:
 					dry_line_traffic.append(ai_driver.sim.position)
 				if not dry_line_traffic.is_empty():
 					track.update_dry_line(SIM_DT, dry_line_traffic)
 
 			race.step(SIM_DT, sim.position, sim.angle, track)
-			ai_race.step(SIM_DT, ai_driver.sim.position, ai_driver.sim.angle, track)
+			if event_mode == "race":
+				ai_race.step(SIM_DT, ai_driver.sim.position, ai_driver.sim.angle, track)
 
 			_record_tyre_effects(SIM_DT)
 			sim.last_impact_kph = move_toward(sim.last_impact_kph, 0.0, SIM_DT * 28.0)
-			ai_driver.sim.last_impact_kph = move_toward(ai_driver.sim.last_impact_kph, 0.0, SIM_DT * 28.0)
+			if event_mode == "race":
+				ai_driver.sim.last_impact_kph = move_toward(ai_driver.sim.last_impact_kph, 0.0, SIM_DT * 28.0)
 		accumulator -= SIM_DT
 
 	if not panel_open:
@@ -244,6 +249,12 @@ func _input(event: InputEvent) -> void:
 		elif event.keycode == KEY_M:
 			_toggle_transmission()
 			return
+		elif event.keycode == KEY_B:
+			_toggle_abs()
+			return
+		elif event.keycode == KEY_F2:
+			_toggle_event_mode()
+			return
 		elif event.keycode == KEY_Q:
 			sim.shift_down()
 			queue_redraw()
@@ -278,6 +289,10 @@ func _input(event: InputEvent) -> void:
 			_toggle_transmission()
 		elif event.button_index == JOY_BUTTON_BACK:
 			_toggle_weather_effects()
+		elif event.button_index == JOY_BUTTON_DPAD_UP:
+			_toggle_event_mode()
+		elif event.button_index == JOY_BUTTON_DPAD_DOWN:
+			_toggle_abs()
 		elif event.button_index == JOY_BUTTON_LEFT_SHOULDER:
 			sim.shift_down()
 			queue_redraw()
@@ -304,6 +319,10 @@ func _input(event: InputEvent) -> void:
 				queue_redraw()
 			elif Rect2(rects["weather"]).has_point(event.position):
 				_toggle_weather_effects()
+			elif Rect2(rects["mode"]).has_point(event.position):
+				_toggle_event_mode()
+			elif Rect2(rects["abs"]).has_point(event.position):
+				_toggle_abs()
 			elif Rect2(rects["transmission"]).has_point(event.position):
 				_toggle_transmission()
 			elif Rect2(rects["shift_down"]).has_point(event.position):
@@ -344,6 +363,17 @@ func _toggle_transmission() -> void:
 	_save_preferences()
 	queue_redraw()
 
+func _toggle_abs() -> void:
+	sim.toggle_abs()
+	_save_preferences()
+	queue_redraw()
+
+func _toggle_event_mode() -> void:
+	event_mode = "time_trial" if event_mode == "race" else "race"
+	_save_preferences()
+	_start_event()
+	queue_redraw()
+
 func _load_preferences() -> void:
 	if not FileAccess.file_exists(SETTINGS_PATH):
 		return
@@ -354,6 +384,10 @@ func _load_preferences() -> void:
 	if parsed is Dictionary:
 		weather_effects_enabled = bool(parsed.get("weather_effects", true))
 		sim.set_manual_transmission(bool(parsed.get("manual_transmission", false)))
+		sim.set_abs_enabled(bool(parsed.get("abs_enabled", true)))
+		event_mode = String(parsed.get("event_mode", "race"))
+		if event_mode != "time_trial":
+			event_mode = "race"
 
 func _save_preferences() -> void:
 	var file: FileAccess = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
@@ -361,7 +395,9 @@ func _save_preferences() -> void:
 		return
 	file.store_string(JSON.stringify({
 		"weather_effects": weather_effects_enabled,
-		"manual_transmission": sim.transmission_manual
+		"manual_transmission": sim.transmission_manual,
+		"abs_enabled": sim.abs_enabled,
+		"event_mode": event_mode
 	}, "\t"))
 
 func _cycle_theme() -> void:
@@ -371,7 +407,8 @@ func _cycle_theme() -> void:
 	queue_redraw()
 
 func _race_key() -> String:
-	return "%s::%s::car_%d" % [track.course_id(), themes.id(), sim.preset_index]
+	var base: String = "%s::%s::car_%d" % [track.course_id(), themes.id(), sim.preset_index]
+	return base + "::time_trial" if event_mode == "time_trial" else base
 
 func _start_event() -> void:
 	sim.reset()
@@ -384,7 +421,8 @@ func _start_event() -> void:
 
 	ai_driver.restart(track)
 
-	race.configure(_race_key(), 3)
+	var time_trial: bool = event_mode == "time_trial"
+	race.configure(_race_key(), 1 if time_trial else 3, time_trial)
 	race.restart()
 	ai_race.configure("ai", 3)
 	ai_race.restart()
@@ -396,6 +434,10 @@ func _start_event() -> void:
 	smoke_positions.clear()
 	smoke_life.clear()
 	smoke_spawn_cooldown = 0.0
+
+func _update_track_limits() -> void:
+	if race.is_racing() and track.off_track_wheel_count(sim) > 2:
+		race.invalidate_current_lap("TRACK LIMITS")
 
 func _resolve_car_collision() -> void:
 	var other: VehicleSim = ai_driver.sim
@@ -477,6 +519,8 @@ func _control_rects() -> Dictionary:
 		"tune": Rect2(Vector2(view.x - 286.0, 20.0), top_button),
 		"preset": Rect2(Vector2(view.x - 194.0, 20.0), top_button),
 		"reset": Rect2(Vector2(view.x - 102.0, 20.0), top_button),
+		"mode": Rect2(Vector2(view.x - 562.0, 72.0), top_button),
+		"abs": Rect2(Vector2(view.x - 470.0, 72.0), top_button),
 		"shift_down": Rect2(Vector2(view.x - 378.0, 72.0), top_button),
 		"shift_up": Rect2(Vector2(view.x - 286.0, 72.0), top_button),
 		"transmission": Rect2(Vector2(view.x - 194.0, 72.0), top_button),
@@ -533,20 +577,21 @@ func _draw() -> void:
 		Callable(self, "_world_to_screen"),
 		pixels_per_meter
 	)
-	visuals.draw_car(
-		self,
-		themes,
-		ai_driver.sim,
-		Callable(self, "_world_to_screen"),
-		pixels_per_meter
-	)
-	visuals.draw_rival_marker(
-		self,
-		themes,
-		ai_driver.sim.position,
-		Callable(self, "_world_to_screen"),
-		pixels_per_meter
-	)
+	if event_mode == "race":
+		visuals.draw_car(
+			self,
+			themes,
+			ai_driver.sim,
+			Callable(self, "_world_to_screen"),
+			pixels_per_meter
+		)
+		visuals.draw_rival_marker(
+			self,
+			themes,
+			ai_driver.sim.position,
+			Callable(self, "_world_to_screen"),
+			pixels_per_meter
+		)
 	visuals.draw_car(
 		self,
 		themes,
@@ -571,7 +616,7 @@ func _draw() -> void:
 		joy_name = Input.get_joy_name(joypads[0])
 
 	visuals.draw_hud(self, themes, sim, surface_name, telemetry_open, joy_name)
-	visuals.draw_race_hud(self, themes, race, _player_position_rank(), ai_race)
+	visuals.draw_race_hud(self, themes, race, _player_position_rank() if event_mode == "race" else 1, ai_race, event_mode == "time_trial")
 
 	var rects: Dictionary = _control_rects()
 	var active: Dictionary = {
@@ -593,5 +638,7 @@ func _draw() -> void:
 		track.course_name(),
 		weather_effects_enabled,
 		sim.transmission_manual,
-		sim.gear_label()
+		sim.gear_label(),
+		event_mode == "time_trial",
+		sim.abs_enabled
 	)

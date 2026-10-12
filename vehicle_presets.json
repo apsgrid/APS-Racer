@@ -22,7 +22,8 @@
                        "steering_rate":  2.8,
                        "track_width":  1.58,
                        "wheelbase":  2.55,
-                       "yaw_damping":  1100
+                       "yaw_damping":  1100,
+                       "engine_brake_force":  1850
                    }
     },
     {
@@ -48,7 +49,8 @@
                        "steering_rate":  2.8,
                        "track_width":  1.54,
                        "wheelbase":  2.45,
-                       "yaw_damping":  1220
+                       "yaw_damping":  1220,
+                       "engine_brake_force":  1650
                    }
     },
     {
@@ -74,7 +76,8 @@
                        "steering_rate":  2.8,
                        "track_width":  1.61,
                        "wheelbase":  2.58,
-                       "yaw_damping":  1050
+                       "yaw_damping":  1050,
+                       "engine_brake_force":  2050
                    }
     }
 ]

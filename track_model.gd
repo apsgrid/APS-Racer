@@ -265,6 +265,14 @@ func is_on_road(point: Vector2) -> bool:
 	var inner_d: float = rounded_box_sdf(point, ROAD_INNER_HALF, ROAD_INNER_RADIUS)
 	return outer_d <= 0.0 and inner_d >= 0.0
 
+
+func off_track_wheel_count(sim: VehicleSim) -> int:
+	var count: int = 0
+	for wheel_position: Vector2 in sim.get_wheel_world_positions():
+		if not is_on_road(wheel_position):
+			count += 1
+	return count
+
 func surface_mu(point: Vector2) -> float:
 	var on_road: bool = is_on_road(point)
 	if course_id() == "airfield":

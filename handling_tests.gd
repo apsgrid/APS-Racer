@@ -33,6 +33,22 @@ func _init() -> void:
 	if not bool(drivetrain["pass"]):
 		failures += 1
 
+	var engine_brake: Dictionary = _test_engine_braking()
+	print("Engine braking | coast %.1f -> engine %.1f km/h after 3s" % [
+		float(engine_brake["coast_kph"]),
+		float(engine_brake["engine_kph"])
+	])
+	if not bool(engine_brake["pass"]):
+		failures += 1
+
+	var abs_test: Dictionary = _test_abs()
+	print("ABS | ON %.1fm / OFF %.1fm from 100 km/h" % [
+		float(abs_test["abs_on_distance"]),
+		float(abs_test["abs_off_distance"])
+	])
+	if not bool(abs_test["pass"]):
+		failures += 1
+
 	if failures == 0:
 		print("RESULT: PASS")
 		quit(0)
@@ -126,4 +142,61 @@ func _test_reverse_and_manual() -> Dictionary:
 		"gear1_kph": gear1_kph,
 		"gear2_kph": gear2_kph,
 		"pass": passed
+	}
+
+func _test_engine_braking() -> Dictionary:
+	var coast: VehicleSim = VehicleSim.new()
+	coast.set_preset(0)
+	coast.position = Vector2.ZERO
+	coast.velocity = Vector2(100.0 / 3.6, 0.0)
+	coast.engine_brake_force = 0.0
+
+	var engine: VehicleSim = VehicleSim.new()
+	engine.set_preset(0)
+	engine.position = Vector2.ZERO
+	engine.velocity = Vector2(100.0 / 3.6, 0.0)
+
+	var elapsed: float = 0.0
+	while elapsed < 3.0:
+		coast.step(DT, 0.0, 0.0, 0.0, false, _surface)
+		engine.step(DT, 0.0, 0.0, 0.0, false, _surface)
+		elapsed += DT
+
+	var coast_kph: float = coast.speed_kph()
+	var engine_kph: float = engine.speed_kph()
+	return {
+		"coast_kph": coast_kph,
+		"engine_kph": engine_kph,
+		"pass": engine_kph < coast_kph - 4.0 and engine_kph > 40.0
+	}
+
+func _test_abs() -> Dictionary:
+	var abs_on: VehicleSim = VehicleSim.new()
+	abs_on.set_preset(0)
+	abs_on.position = Vector2.ZERO
+	abs_on.velocity = Vector2(100.0 / 3.6, 0.0)
+	abs_on.set_abs_enabled(true)
+
+	var abs_off: VehicleSim = VehicleSim.new()
+	abs_off.set_preset(0)
+	abs_off.position = Vector2.ZERO
+	abs_off.velocity = Vector2(100.0 / 3.6, 0.0)
+	abs_off.set_abs_enabled(false)
+
+	var on_start: Vector2 = abs_on.position
+	var off_start: Vector2 = abs_off.position
+	var elapsed: float = 0.0
+	while elapsed < 8.0 and (abs_on.speed_kph() > 1.0 or abs_off.speed_kph() > 1.0):
+		if abs_on.speed_kph() > 1.0:
+			abs_on.step(DT, 0.0, 1.0, 0.0, false, _surface)
+		if abs_off.speed_kph() > 1.0:
+			abs_off.step(DT, 0.0, 1.0, 0.0, false, _surface)
+		elapsed += DT
+
+	var on_distance: float = abs_on.position.distance_to(on_start)
+	var off_distance: float = abs_off.position.distance_to(off_start)
+	return {
+		"abs_on_distance": on_distance,
+		"abs_off_distance": off_distance,
+		"pass": on_distance < off_distance - 1.5 and on_distance > 20.0 and off_distance < 90.0
 	}

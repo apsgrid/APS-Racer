@@ -104,30 +104,40 @@ Skin definitions live in `themes.json`. Rendering is isolated in `visual_rendere
 
 ### Race system
 
-The current event is a three-lap race against one AI rival.
+Two event modes share the same checkpoint/timing system.
 
+**Race**
+- three-lap race against one AI rival
+- P1/P2 live position
+- player/rival contact response
+- finish state and total race time
+
+**Time Trial**
+- continuous timed laps
+- no AI rival or rival collision
+- best-lap ghost only
+- independent Time Trial records/ghosts
+
+Both modes include:
 - 3.25 second start countdown
 - ordered checkpoints with direction validation
 - four timed sectors per lap
 - current lap, last lap, best lap and sector timing
-- P1/P2 live position
-- persistent best-lap records per visual skin and car
 - best-lap ghost recording at 30 Hz
-- translucent ghost playback on subsequent laps/races
-- first AI rival using the track's racing-line data
-- player/rival contact response
-- finish state and total race time
-- RESET / R restarts the entire event
+- translucent ghost playback
+- track-limit enforcement: two wheels may leave the racing surface, but three or four wheels off immediately void the current lap
+- void laps cannot update best lap, best sectors or the stored ghost
+- RESET / R restarts the event
 
-Race records are stored in `user://aps_racer_race_records.json`. The record/ghost key includes the active course, visual skin and selected car, so each course/skin/car combination retains independent records.
+Race records are stored in `user://aps_racer_race_records.json`. Existing Race-mode keys remain compatible; Time Trial uses a separate record key for each course/skin/car combination.
 
-The AI and the player use the same track checkpoint rules. The permanent regression suite requires the rival to finish three laps on the lower-grip Red Dirt surface profile.
+The AI and the player use the same track checkpoint rules in Race mode. The permanent regression suite requires the rival to finish three laps on the lower-grip Red Dirt surface profile.
 
 ### Handling Lab
 
 Press **T** or **F1**, or tap **TUNE**, to open the in-game Handling Lab.
 
-The panel applies changes live and exposes 21 vehicle parameters, including mass, yaw inertia, wheelbase, track width, CG height, weight distribution, drivetrain split, engine/brake forces, tyre grip, corner stiffness, yaw damping, drag, steering locks/rate and handbrake behaviour.
+The panel applies changes live and exposes 22 vehicle parameters, including mass, yaw inertia, wheelbase, track width, CG height, weight distribution, drivetrain split, engine force, engine braking, service-brake force, tyre grip, corner stiffness, yaw damping, drag, steering locks/rate and handbrake behaviour.
 
 Named tunes are persisted to `user://aps_racer_handling_presets.json` and can be saved, loaded and deleted in-game.
 
@@ -150,8 +160,10 @@ Keyboard:
 - 1/2/3: select car
 - G: switch visual skin
 - C: switch ROUND / FIGURE 8 / AIRFIELD course
+- F2: toggle Race / Time Trial mode
 - M: toggle automatic/manual transmission
 - Q / E: shift down / up in manual mode
+- B: toggle ABS
 - V: toggle weather/dirt visual effects
 - H: toggle telemetry drawer
 - T / F1: Handling Lab
@@ -164,6 +176,8 @@ Gamepad:
 - Y: toggle automatic/manual transmission
 - Left/right shoulder: shift down/up in manual mode
 - Back/View: toggle weather/dirt visual effects
+- D-pad up: toggle Race / Time Trial
+- D-pad down: toggle ABS
 - D-pad left/right: change car
 - Grip-limit rumble increases as available tyre grip is exhausted
 
@@ -174,6 +188,8 @@ Touch:
 - HANDBRAKE
 - SKIN
 - ROUND / FIG 8 / AIR course selector
+- RACE / TIME event mode
+- ABS ON / ABS OFF
 - AUTO / M1-M6 transmission control
 - GEAR - / GEAR + in manual mode
 - FX ON / FX OFF
@@ -193,11 +209,13 @@ The normal build script runs both suites automatically.
 
 Handling baseline:
 
-- RWD Sport: 0-100 km/h 5.53 s; 100-0 km/h 33.3 m; sustained cornering 1.59 g
-- FWD Hatch: 0-100 km/h 5.83 s; 100-0 km/h 30.5 m; sustained cornering 1.57 g
-- AWD Rally: 0-100 km/h 5.44 s; 100-0 km/h 34.8 m; sustained cornering 1.64 g
+- RWD Sport: 0-100 km/h 5.53 s; ABS-on 100-0 km/h 34.7 m; sustained cornering 1.59 g
+- FWD Hatch: 0-100 km/h 5.83 s; ABS-on 100-0 km/h 31.8 m; sustained cornering 1.57 g
+- AWD Rally: 0-100 km/h 5.44 s; ABS-on 100-0 km/h 36.5 m; sustained cornering 1.64 g
 - Reverse reaches about 45 km/h
 - Manual first gear limits around 58 km/h; second gear around 92 km/h
+- RWD 100 km/h lift-off test: 96.0 km/h after 3 s with engine braking disabled versus 81.5 km/h with the baked engine-brake setting
+- RWD hard-braking regression: 34.7 m with ABS on versus 36.4 m with ABS off/locked-tyre simulation
 
 The numbers are regression baselines, not final realism targets.
 
@@ -207,6 +225,9 @@ Race baseline:
 - three-lap event completion
 - sector timing and best-lap retention
 - ghost capture/playback
+- continuous Time Trial laps with separate records
+- invalid Time Trial laps cannot replace a valid best/ghost
+- two wheels off remain legal; three or more wheels off trigger a lap void
 - wet racing-line grip rises measurably under traffic
 - AI completes three Red Dirt ROUND laps in about 39 seconds while remaining predominantly on-track
 - AI completes three Red Dirt FIGURE 8 laps in about 49 seconds while remaining predominantly on-track
@@ -254,10 +275,10 @@ The project uses GDScript and Godot's Compatibility renderer so desktop Linux, W
 
 ## Architecture
 
-- `vehicle_sim.gd`: vehicle dynamics and tunable parameters
+- `vehicle_sim.gd`: vehicle dynamics, engine braking, ABS and tunable parameters
 - `vehicle_presets.json`: baked car setups
-- `track_model.gd`: selectable ROUND / FIGURE 8 geometry, barriers, surface queries, grids, race gates and racing lines
-- `race_system.gd`: countdown, checkpoints, sectors, laps, records and ghost replay
+- `track_model.gd`: selectable ROUND / FIGURE 8 / AIRFIELD geometry, barriers, track-limit wheel queries, grids, race gates and racing lines
+- `race_system.gd`: Race/Time Trial timing, lap validity, checkpoints, sectors, records and ghost replay
 - `ai_driver.gd`: first racing-line AI controller
 - `themes.json`: reskinnable environment/UI definitions
 - `theme_system.gd`: active theme selection and tokens
@@ -295,6 +316,6 @@ See:
 
 1. Tune the three cars by feel on keyboard/gamepad/touch and bake the preferred baselines.
 2. Improve AI racecraft: overtaking, defensive lines and difficulty levels.
-3. Add race/event selection and additional course geometry.
+3. Add additional course geometry and event rules.
 4. Add APS Grid tune submission/versioning before the external tuner build is published.
 5. Begin the map-derived track pipeline without coupling map geometry to either visual skin.
