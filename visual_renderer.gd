@@ -1096,7 +1096,8 @@ func draw_touch_controls(
 	manual_mode: bool,
 	gear_label: String,
 	time_trial: bool,
-	abs_enabled: bool
+	abs_enabled: bool,
+	ai_difficulty: String
 ) -> void:
 	if not show_touch:
 		return
@@ -1118,6 +1119,7 @@ func draw_touch_controls(
 	_draw_small_button(canvas, theme, Rect2(rects["preset"]), "CAR", false, "car")
 	_draw_small_button(canvas, theme, Rect2(rects["reset"]), "RESET", false, "reset")
 
+	_draw_small_button(canvas, theme, Rect2(rects["difficulty"]), "AI " + ai_difficulty, false)
 	_draw_small_button(canvas, theme, Rect2(rects["mode"]), "TIME" if time_trial else "RACE", time_trial)
 	_draw_small_button(canvas, theme, Rect2(rects["abs"]), "ABS ON" if abs_enabled else "ABS OFF", abs_enabled)
 
@@ -1281,7 +1283,9 @@ func draw_race_hud(
 	race: RaceSystem,
 	position_rank: int,
 	ai_race: RaceSystem,
-	time_trial: bool = false
+	time_trial: bool = false,
+	ai_difficulty: String = "NORMAL",
+	ai_state: String = "RACING"
 ) -> void:
 	var font: Font = ThemeDB.fallback_font
 	var bg: Color = theme.colour("ui_panel")
@@ -1323,7 +1327,7 @@ func draw_race_hud(
 		canvas.draw_string(font, Vector2(638, 138), "VALID LAP", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, theme.colour("success"))
 	else:
 		var rival_lap: int = min(ai_race.current_lap, ai_race.total_laps)
-		canvas.draw_string(font, Vector2(638, 138), "RIVAL L%d" % rival_lap, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, muted)
+		canvas.draw_string(font, Vector2(638, 138), "RIVAL L%d  %s  %s" % [rival_lap, ai_difficulty, ai_state], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, muted)
 
 	if race.state == "countdown":
 		var label: String = race.countdown_text()

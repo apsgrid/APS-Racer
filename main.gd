@@ -76,7 +76,7 @@ func _physics_process(delta: float) -> void:
 			track.resolve_barriers(sim)
 
 			if event_mode == "race":
-				ai_driver.step(SIM_DT, ai_race.is_racing(), track)
+				ai_driver.step(SIM_DT, ai_race.is_racing(), track, sim)
 				_resolve_car_collision()
 
 			if race.is_racing():
@@ -263,6 +263,9 @@ func _input(event: InputEvent) -> void:
 		elif event.keycode == KEY_F2:
 			_toggle_event_mode()
 			return
+		elif event.keycode == KEY_F3:
+			_cycle_ai_difficulty()
+			return
 		elif event.keycode == KEY_Q:
 			sim.shift_down()
 			queue_redraw()
@@ -301,6 +304,8 @@ func _input(event: InputEvent) -> void:
 			_toggle_event_mode()
 		elif event.button_index == JOY_BUTTON_DPAD_DOWN:
 			_toggle_abs()
+		elif event.button_index == JOY_BUTTON_RIGHT_STICK:
+			_cycle_ai_difficulty()
 		elif event.button_index == JOY_BUTTON_LEFT_SHOULDER:
 			sim.shift_down()
 			queue_redraw()
@@ -329,6 +334,8 @@ func _input(event: InputEvent) -> void:
 				_toggle_weather_effects()
 			elif Rect2(rects["mode"]).has_point(event.position):
 				_toggle_event_mode()
+			elif Rect2(rects["difficulty"]).has_point(event.position):
+				_cycle_ai_difficulty()
 			elif Rect2(rects["abs"]).has_point(event.position):
 				_toggle_abs()
 			elif Rect2(rects["transmission"]).has_point(event.position):
@@ -382,6 +389,12 @@ func _toggle_event_mode() -> void:
 	_start_event()
 	queue_redraw()
 
+func _cycle_ai_difficulty() -> void:
+	ai_driver.cycle_difficulty(1)
+	_save_preferences()
+	_start_event()
+	queue_redraw()
+
 func _load_preferences() -> void:
 	if not FileAccess.file_exists(SETTINGS_PATH):
 		return
@@ -396,6 +409,7 @@ func _load_preferences() -> void:
 		event_mode = String(parsed.get("event_mode", "race"))
 		if event_mode != "time_trial":
 			event_mode = "race"
+		ai_driver.set_difficulty(int(parsed.get("ai_difficulty", 1)))
 
 func _save_preferences() -> void:
 	var file: FileAccess = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
@@ -405,7 +419,8 @@ func _save_preferences() -> void:
 		"weather_effects": weather_effects_enabled,
 		"manual_transmission": sim.transmission_manual,
 		"abs_enabled": sim.abs_enabled,
-		"event_mode": event_mode
+		"event_mode": event_mode,
+		"ai_difficulty": ai_driver.difficulty_index
 	}, "\t"))
 
 func _cycle_theme() -> void:
@@ -528,6 +543,7 @@ func _control_rects() -> Dictionary:
 		"tune": Rect2(Vector2(view.x - 286.0, 20.0), top_button),
 		"preset": Rect2(Vector2(view.x - 194.0, 20.0), top_button),
 		"reset": Rect2(Vector2(view.x - 102.0, 20.0), top_button),
+		"difficulty": Rect2(Vector2(view.x - 654.0, 72.0), top_button),
 		"mode": Rect2(Vector2(view.x - 562.0, 72.0), top_button),
 		"abs": Rect2(Vector2(view.x - 470.0, 72.0), top_button),
 		"shift_down": Rect2(Vector2(view.x - 378.0, 72.0), top_button),
@@ -641,7 +657,16 @@ func _draw() -> void:
 		joy_name = Input.get_joy_name(joypads[0])
 
 	visuals.draw_hud(self, themes, sim, surface_name, telemetry_open, joy_name)
-	visuals.draw_race_hud(self, themes, race, _player_position_rank() if event_mode == "race" else 1, ai_race, event_mode == "time_trial")
+	visuals.draw_race_hud(
+		self,
+		themes,
+		race,
+		_player_position_rank() if event_mode == "race" else 1,
+		ai_race,
+		event_mode == "time_trial",
+		ai_driver.difficulty_name(),
+		ai_driver.racecraft_state
+	)
 
 	var rects: Dictionary = _control_rects()
 	var active: Dictionary = {
@@ -665,6 +690,7 @@ func _draw() -> void:
 		sim.transmission_manual,
 		sim.gear_label(),
 		event_mode == "time_trial",
-		sim.abs_enabled
+		sim.abs_enabled,
+		ai_driver.difficulty_name()
 	)
 	visuals.draw_starter_intro(self, themes, starter, race, get_viewport_rect().size)

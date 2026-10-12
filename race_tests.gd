@@ -13,6 +13,7 @@ func _init() -> void:
 	_test_spectator_positions()
 	_test_dynamic_dry_line()
 	_test_ai_driver()
+	_test_ai_racecraft()
 
 	if failures.is_empty():
 		print("RESULT: PASS")
@@ -254,3 +255,38 @@ func _test_spectator_positions() -> void:
 			_assert(not track.is_on_road(point), "Spectator placed on racing surface in %s." % track.course_name())
 		_assert(not track.is_on_road(track.starter_crowd_position()), "Corey crowd slot is unsafe in %s." % track.course_name())
 	print("Spectators | ROUND/FIGURE 8/AIRFIELD safely outside racing surface")
+
+
+func _test_ai_racecraft() -> void:
+	var track: TrackModel = TrackModel.new()
+	var ai: AIDriver = AIDriver.new()
+	ai.setup(track)
+	_assert(ai.difficulty_name() == "NORMAL", "AI did not default to NORMAL difficulty.")
+
+	var normal_force: float = ai.sim.max_engine_force
+	ai.set_difficulty(0)
+	var easy_force: float = ai.sim.max_engine_force
+	_assert(ai.difficulty_name() == "EASY", "AI difficulty did not switch to EASY.")
+	ai.set_difficulty(2)
+	var hard_force: float = ai.sim.max_engine_force
+	_assert(ai.difficulty_name() == "HARD", "AI difficulty did not switch to HARD.")
+	_assert(easy_force < normal_force and hard_force > normal_force, "AI difficulty does not scale engine output.")
+
+	ai.set_difficulty(1)
+	ai.restart(track)
+	var line: Array[Vector2] = track.racing_line_points()
+	ai.sim.position = line[1]
+	ai.target_index = 2
+	var opponent: VehicleSim = VehicleSim.new()
+	opponent.set_preset(0)
+	var tangent: Vector2 = (line[3] - line[1]).normalized()
+	opponent.position = ai.sim.position + tangent * 6.0
+	ai.step(1.0 / 60.0, true, track, opponent)
+	_assert(ai.racecraft_state == "ATTACK", "AI did not enter ATTACK state with a close car ahead.")
+	_assert(abs(ai.lane_offset_target) > 0.5, "AI attack state did not request an overtaking line.")
+
+	opponent.position = ai.sim.position - tangent * 5.0
+	ai.step(1.0 / 60.0, true, track, opponent)
+	_assert(ai.racecraft_state == "DEFEND", "AI did not enter DEFEND state with a close car behind.")
+	_assert(abs(ai.lane_offset_target) > 0.2, "AI defend state did not cover a line.")
+	print("AI racecraft | EASY/NORMAL/HARD | attack/defend line selection PASS")

@@ -108,6 +108,8 @@ Two event modes share the same checkpoint/timing system.
 
 **Race**
 - three-lap race against one AI rival
+- Easy / Normal / Hard rival difficulty
+- opponent-aware rival attack lines, defensive positioning and close-follow collision avoidance
 - P1/P2 live position
 - player/rival contact response
 - finish state and total race time
@@ -165,6 +167,7 @@ Keyboard:
 - G: switch visual skin
 - C: switch ROUND / FIGURE 8 / AIRFIELD course
 - F2: toggle Race / Time Trial mode
+- F3: cycle rival difficulty (Easy / Normal / Hard)
 - M: toggle automatic/manual transmission
 - Q / E: shift down / up in manual mode
 - B: toggle ABS
@@ -182,6 +185,7 @@ Gamepad:
 - Back/View: toggle weather/dirt visual effects
 - D-pad up: toggle Race / Time Trial
 - D-pad down: toggle ABS
+- Right-stick click: cycle rival difficulty
 - D-pad left/right: change car
 - Grip-limit rumble increases as available tyre grip is exhausted
 
@@ -193,6 +197,7 @@ Touch:
 - SKIN
 - ROUND / FIG 8 / AIR course selector
 - RACE / TIME event mode
+- AI EASY / NORMAL / HARD
 - ABS ON / ABS OFF
 - AUTO / M1-M6 transmission control
 - GEAR - / GEAR + in manual mode
@@ -320,7 +325,7 @@ See:
 ## Roadmap
 
 1. Tune the three cars by feel on keyboard/gamepad/touch and bake the preferred baselines.
-2. Improve AI racecraft: overtaking, defensive lines and difficulty levels.
+2. Expand AI racecraft to multi-rival traffic, alternate strategies and scalable fields.
 3. Add additional course geometry and event rules.
 4. Add APS Grid tune submission/versioning before the external tuner build is published.
 5. Begin the map-derived track pipeline without coupling map geometry to either visual skin.
