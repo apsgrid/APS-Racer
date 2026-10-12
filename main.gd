@@ -30,7 +30,7 @@ var tuning_panel: TuningPanel
 
 func _ready() -> void:
 	sim.set_preset(0)
-	ai_driver.setup()
+	ai_driver.setup(track)
 	camera_world = sim.position
 	static_world = StaticWorldLayer.new()
 	add_child(static_world)
@@ -198,7 +198,10 @@ func _read_controls() -> Dictionary:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_T or event.keycode == KEY_F1:
+		if event.keycode == KEY_C:
+			_cycle_course()
+			return
+		elif event.keycode == KEY_T or event.keycode == KEY_F1:
 			tuning_panel.toggle()
 			return
 		elif event.keycode == KEY_G:
@@ -243,6 +246,8 @@ func _input(event: InputEvent) -> void:
 				tuning_panel.set_open(true)
 			elif Rect2(rects["theme"]).has_point(event.position):
 				_cycle_theme()
+			elif Rect2(rects["course"]).has_point(event.position):
+				_cycle_course()
 			elif Rect2(rects["data"]).has_point(event.position):
 				telemetry_open = not telemetry_open
 				queue_redraw()
@@ -271,16 +276,17 @@ func _cycle_theme() -> void:
 	queue_redraw()
 
 func _race_key() -> String:
-	return "%s::car_%d" % [themes.id(), sim.preset_index]
+	return "%s::%s::car_%d" % [track.course_id(), themes.id(), sim.preset_index]
 
 func _start_event() -> void:
 	sim.reset()
-	sim.position = Vector2(-3.2, 14.6)
-	sim.angle = 0.0
+	var player_pose: Dictionary = track.player_grid_pose()
+	sim.position = Vector2(player_pose["position"])
+	sim.angle = float(player_pose["angle"])
 	sim.velocity = Vector2.ZERO
 	sim.angular_velocity = 0.0
 
-	ai_driver.restart()
+	ai_driver.restart(track)
 
 	race.configure(_race_key(), 3)
 	race.restart()
@@ -327,6 +333,13 @@ func _player_position_rank() -> int:
 	var ai_score: float = ai_race.progress_score(ai_driver.sim.position, track)
 	return 1 if player_score >= ai_score else 2
 
+func _cycle_course() -> void:
+	track.cycle_course(1)
+	if static_world != null:
+		static_world.refresh_theme()
+	_start_event()
+	queue_redraw()
+
 func _apply_theme() -> void:
 	track.set_surface_profile(
 		float(themes.value("road_mu", 1.0)),
@@ -358,7 +371,8 @@ func _control_rects() -> Dictionary:
 		"brake": Rect2(Vector2(view.x - 258.0, view.y - 132.0), Vector2(104.0, 104.0)),
 		"throttle": Rect2(Vector2(view.x - 140.0, view.y - 132.0), Vector2(104.0, 104.0)),
 		"handbrake": Rect2(Vector2(view.x - 230.0, view.y - 214.0), Vector2(194.0, 58.0)),
-		"theme": Rect2(Vector2(view.x - 470.0, 20.0), top_button),
+		"theme": Rect2(Vector2(view.x - 562.0, 20.0), top_button),
+		"course": Rect2(Vector2(view.x - 470.0, 20.0), top_button),
 		"data": Rect2(Vector2(view.x - 378.0, 20.0), top_button),
 		"tune": Rect2(Vector2(view.x - 286.0, 20.0), top_button),
 		"preset": Rect2(Vector2(view.x - 194.0, 20.0), top_button),
@@ -452,4 +466,4 @@ func _draw() -> void:
 		"tune": tuning_panel != null and tuning_panel.is_open()
 	}
 	var show_touch: bool = OS.has_feature("web") or OS.has_feature("android") or DisplayServer.is_touchscreen_available()
-	visuals.draw_touch_controls(self, themes, rects, active, show_touch)
+	visuals.draw_touch_controls(self, themes, rects, active, show_touch, track.course_name())

@@ -6,16 +6,17 @@ var target_index: int = 1
 var enabled: bool = true
 var last_controls: Dictionary = {"steer":0.0, "throttle":0.0, "brake":0.0, "handbrake":false}
 
-func setup() -> void:
+func setup(track: TrackModel) -> void:
 	sim.set_preset(1)
 	sim.max_engine_force *= 0.97
 	sim.base_tyre_mu *= 0.98
-	restart()
+	restart(track)
 
-func restart() -> void:
+func restart(track: TrackModel) -> void:
 	sim.reset()
-	sim.position = Vector2(-6.5, 17.4)
-	sim.angle = 0.0
+	var pose: Dictionary = track.ai_grid_pose()
+	sim.position = Vector2(pose["position"])
+	sim.angle = float(pose["angle"])
 	sim.velocity = Vector2.ZERO
 	sim.angular_velocity = 0.0
 	target_index = 1
@@ -46,18 +47,30 @@ func step(dt: float, allow_drive: bool, track: TrackModel) -> void:
 	var angle_error: float = wrapf(desired_angle - sim.angle, -PI, PI)
 	var steer: float = clamp(angle_error / 0.62, -1.0, 1.0)
 
-	var turn_demand: float = abs(angle_error)
+	var prev_index: int = posmod(target_index - 1, line.size())
+	var after_next_index: int = (target_index + 2) % line.size()
+	var incoming: Vector2 = (target - line[prev_index]).normalized()
+	var outgoing: Vector2 = (line[after_next_index] - next_target).normalized()
+	var path_turn: float = abs(incoming.angle_to(outgoing))
+	var turn_demand: float = max(abs(angle_error), path_turn * 1.35)
+
 	var speed_ms: float = sim.velocity.length()
-	var target_speed: float = lerp(38.0, 20.0, clamp(turn_demand / 1.15, 0.0, 1.0))
+	var target_speed: float
+	if track.course_id() == "figure_eight":
+		target_speed = lerp(25.0, 12.5, clamp(turn_demand / 0.90, 0.0, 1.0))
+	else:
+		target_speed = lerp(38.0, 20.0, clamp(turn_demand / 1.15, 0.0, 1.0))
+
 	var throttle: float = 1.0
 	var brake: float = 0.0
 	if speed_ms > target_speed:
-		throttle = 0.10
-		brake = clamp((speed_ms - target_speed) / 8.0, 0.0, 0.80)
+		throttle = 0.05
+		var brake_scale: float = 5.0 if track.course_id() == "figure_eight" else 8.0
+		brake = clamp((speed_ms - target_speed) / brake_scale, 0.0, 1.0)
 	elif turn_demand > 0.95:
-		throttle = 0.45
+		throttle = 0.35 if track.course_id() == "figure_eight" else 0.45
 	elif turn_demand > 0.62:
-		throttle = 0.72
+		throttle = 0.58 if track.course_id() == "figure_eight" else 0.72
 
 	last_controls = {
 		"steer": steer,

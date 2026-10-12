@@ -2,9 +2,9 @@
 
 Top-down racing prototype built in Godot 4.7.2 with a custom four-wheel vehicle simulation.
 
-## Current milestone: first race build
+## Current milestone: multi-course race build
 
-The game now combines the custom handling model, reskinnable presentation layer, compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and a first AI opponent in a complete three-lap event.
+The game now combines the custom handling model, two selectable physical course layouts, reskinnable presentation layer, compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and a first AI opponent in a complete three-lap event.
 
 ### Physics
 
@@ -30,9 +30,21 @@ Press 1/2/3, D-pad left/right, or the CAR touch button to switch between:
 
 These use the same physics code with different vehicle parameters and drivetrain torque distribution.
 
-### Test circuit
+### Courses
 
-- Rounded high-speed circuit
+Press **C** or tap the course button to switch layouts.
+
+**ROUND**
+- rounded high-speed circuit
+- broad straights and sweeping corners
+
+**FIGURE 8**
+- intersecting same-level figure-eight circuit
+- tighter lobes and crossover
+- independent road ribbon, barrier collision geometry, grid, checkpoints and AI racing line
+
+Both courses support both visual skins. Course choice does not change the selected car or handling setup.
+
 - Theme-selectable surface grip profile
 - Braking/slalom markers rendered as environment-appropriate props
 - Skid marks
@@ -77,7 +89,7 @@ The current event is a three-lap race against one AI rival.
 - finish state and total race time
 - RESET / R restarts the entire event
 
-Race records are stored in `user://aps_racer_race_records.json`. The ghost key includes the active visual skin and selected car so Red Dirt and Brisbane Neon Rain retain independent records.
+Race records are stored in `user://aps_racer_race_records.json`. The record/ghost key includes the active course, visual skin and selected car, so each course/skin/car combination retains independent records.
 
 The AI and the player use the same track checkpoint rules. The permanent regression suite requires the rival to finish three laps on the lower-grip Red Dirt surface profile.
 
@@ -107,6 +119,7 @@ Keyboard:
 - R: reset
 - 1/2/3: select car
 - G: switch visual skin
+- C: switch ROUND / FIGURE 8 course
 - H: toggle telemetry drawer
 - T / F1: Handling Lab
 
@@ -123,6 +136,7 @@ Touch:
 - BRAKE
 - HANDBRAKE
 - SKIN
+- ROUND / FIG 8 course selector
 - DATA
 - TUNE
 - CAR
@@ -152,7 +166,8 @@ Race baseline:
 - three-lap event completion
 - sector timing and best-lap retention
 - ghost capture/playback
-- AI completes three Red Dirt laps in about 44 seconds while remaining predominantly on-track
+- AI completes three Red Dirt ROUND laps in about 43 seconds while remaining predominantly on-track
+- AI completes three Red Dirt FIGURE 8 laps in about 1:16 while remaining predominantly on-track
 
 ## Build
 
@@ -196,7 +211,7 @@ The project uses GDScript and Godot's Compatibility renderer so Web and Android 
 
 - `vehicle_sim.gd`: vehicle dynamics and tunable parameters
 - `vehicle_presets.json`: baked car setups
-- `track_model.gd`: course geometry, barriers, surface queries, race gates and racing line
+- `track_model.gd`: selectable ROUND / FIGURE 8 geometry, barriers, surface queries, grids, race gates and racing lines
 - `race_system.gd`: countdown, checkpoints, sectors, laps, records and ghost replay
 - `ai_driver.gd`: first racing-line AI controller
 - `themes.json`: reskinnable environment/UI definitions

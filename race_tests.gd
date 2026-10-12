@@ -99,18 +99,24 @@ func _test_ghost_memory_cap() -> void:
 	print("Ghost memory cap | frames ", race.current_ghost.size(), " / ", RaceSystem.MAX_GHOST_SAMPLES)
 
 func _test_ai_driver() -> void:
+	_run_ai_course(0, 60.0, 0.75)
+	_run_ai_course(1, 105.0, 0.70)
+
+func _run_ai_course(course_index: int, max_time: float, minimum_on_road: float) -> void:
 	var track: TrackModel = TrackModel.new()
+	track.set_course(course_index)
 	track.set_surface_profile(0.88, 0.56)
 	var ai: AIDriver = AIDriver.new()
-	ai.setup()
+	ai.setup(track)
 	var ai_race: RaceSystem = RaceSystem.new(false, false)
-	ai_race.configure("ai-test", 3)
+	ai_race.configure("ai-test-" + track.course_id(), 3)
 	ai_race.restart()
 	var on_road_samples: int = 0
 	var samples: int = 0
 	var dt: float = 1.0 / 120.0
+	var max_steps: int = int(120.0 * max_time)
 
-	for i: int in range(120 * 60):
+	for i: int in range(max_steps):
 		ai.step(dt, ai_race.is_racing(), track)
 		ai_race.step(dt, ai.sim.position, ai.sim.angle, track)
 		if i % 30 == 0:
@@ -121,7 +127,7 @@ func _test_ai_driver() -> void:
 			break
 
 	var ratio: float = float(on_road_samples) / float(max(samples, 1))
-	_assert(ai_race.is_finished(), "AI failed to complete the three-lap event.")
-	_assert(ai_race.finish_time < 55.0, "AI completed the event too slowly for the baseline.")
-	_assert(ratio > 0.75, "AI spent too much of the test off road.")
-	print("AI race | finish %s | on-road %.0f%% | speed %.1f km/h" % [ai_race.format_time(ai_race.finish_time), ratio * 100.0, ai.sim.speed_kph()])
+	_assert(ai_race.is_finished(), "AI failed to complete %s three-lap event." % track.course_name())
+	_assert(ai_race.finish_time < max_time, "AI completed %s too slowly for the baseline." % track.course_name())
+	_assert(ratio > minimum_on_road, "AI spent too much of %s off road." % track.course_name())
+	print("AI %s | finish %s | on-road %.0f%% | speed %.1f km/h" % [track.course_name(), ai_race.format_time(ai_race.finish_time), ratio * 100.0, ai.sim.speed_kph()])

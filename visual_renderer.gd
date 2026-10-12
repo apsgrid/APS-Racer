@@ -51,7 +51,8 @@ func draw_static_world(
 	else:
 		_draw_neon_environment(canvas, theme, world_to_screen, pixels_per_meter)
 	_draw_track(canvas, theme, track, world_to_screen, world_points_to_screen, pixels_per_meter)
-	_draw_course_markers(canvas, theme, world_to_screen, pixels_per_meter)
+	if track.course_id() == "round":
+		_draw_course_markers(canvas, theme, world_to_screen, pixels_per_meter)
 
 func draw_weather(canvas: CanvasItem, theme: ThemeSystem, visual_time: float) -> void:
 	_draw_weather(canvas, theme, visual_time)
@@ -160,6 +161,10 @@ func _draw_track(
 	world_points_to_screen: Callable,
 	ppm: float
 ) -> void:
+	if track.course_id() == "figure_eight":
+		_draw_figure8_track(canvas, theme, track, world_to_screen, world_points_to_screen, ppm)
+		return
+
 	var outer: PackedVector2Array = world_points_to_screen.call(track.road_outer_points())
 	var inner: PackedVector2Array = world_points_to_screen.call(track.road_inner_points())
 	canvas.draw_colored_polygon(outer, theme.colour("road"))
@@ -180,6 +185,69 @@ func _draw_track(
 		_draw_barrier_line(canvas, theme, inner_barrier, ppm)
 
 	_draw_start_line(canvas, theme, world_to_screen, ppm)
+
+func _draw_figure8_track(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	track: TrackModel,
+	world_to_screen: Callable,
+	world_points_to_screen: Callable,
+	ppm: float
+) -> void:
+	var line: PackedVector2Array = world_points_to_screen.call(track.figure_eight_points())
+	if line.size() < 2:
+		return
+
+	var barrier_dark: Color = theme.colour("barrier_dark")
+	var barrier_light: Color = theme.colour("barrier")
+	var road: Color = theme.colour("road")
+	var edge: Color = theme.colour("edge")
+
+	if theme.id() == "brisbane_neon_rain":
+		var glow: Color = theme.colour("accent2")
+		glow.a = 0.10
+		canvas.draw_polyline(line, glow, max(12.0, ppm * 12.8), true)
+
+	canvas.draw_polyline(line, barrier_dark, max(10.0, ppm * 11.6), true)
+	canvas.draw_polyline(line, barrier_light, max(8.0, ppm * 10.5), true)
+	canvas.draw_polyline(line, road, max(7.0, ppm * 8.8), true)
+
+	edge.a = 0.42 if theme.id() == "red_dirt" else 0.62
+	canvas.draw_polyline(line, edge, max(1.5, ppm * 0.08), true)
+
+	if theme.id() == "brisbane_neon_rain":
+		var wet: Color = theme.colour("road_light")
+		wet.a = 0.16
+		canvas.draw_polyline(line, wet, max(1.0, ppm * 0.05), true)
+	else:
+		var rut: Color = theme.colour("road_dark")
+		rut.a = 0.30
+		canvas.draw_polyline(line, rut, max(1.0, ppm * 0.07), true)
+
+	_draw_figure8_start_line(canvas, theme, track, world_to_screen)
+
+func _draw_figure8_start_line(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	track: TrackModel,
+	world_to_screen: Callable
+) -> void:
+	var gates: Array[Dictionary] = track.race_gates()
+	if gates.is_empty():
+		return
+	var gate: Dictionary = gates[0]
+	var a: Vector2 = world_to_screen.call(Vector2(gate["a"]))
+	var b: Vector2 = world_to_screen.call(Vector2(gate["b"]))
+	var delta: Vector2 = (b - a) / 10.0
+	for i: int in range(10):
+		var p0: Vector2 = a + delta * float(i)
+		var p1: Vector2 = a + delta * float(i + 1)
+		var colour: Color
+		if theme.id() == "red_dirt":
+			colour = Color("#f2e0c3") if i % 2 == 0 else Color("#3b2118")
+		else:
+			colour = theme.colour("accent") if i % 2 == 0 else theme.colour("accent2")
+		canvas.draw_line(p0, p1, colour, 7.0, true)
 
 func _draw_red_dirt_track_detail(
 	canvas: CanvasItem,
@@ -561,7 +629,8 @@ func draw_touch_controls(
 	theme: ThemeSystem,
 	rects: Dictionary,
 	active: Dictionary,
-	show_touch: bool
+	show_touch: bool,
+	course_name: String
 ) -> void:
 	if not show_touch:
 		return
@@ -576,6 +645,7 @@ func draw_touch_controls(
 	_draw_small_button(canvas, theme, Rect2(rects["handbrake"]), "HANDBRAKE", bool(active.get("handbrake", false)))
 
 	_draw_small_button(canvas, theme, Rect2(rects["theme"]), "SKIN", false)
+	_draw_small_button(canvas, theme, Rect2(rects["course"]), "FIG 8" if course_name == "FIGURE 8" else "ROUND", false)
 	_draw_small_button(canvas, theme, Rect2(rects["data"]), "DATA", bool(active.get("data", false)))
 	_draw_small_button(canvas, theme, Rect2(rects["tune"]), "TUNE", bool(active.get("tune", false)))
 	_draw_small_button(canvas, theme, Rect2(rects["preset"]), "CAR", false)
