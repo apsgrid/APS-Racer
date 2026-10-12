@@ -4,7 +4,7 @@ Top-down racing prototype built in Godot 4.7.2 with a custom four-wheel vehicle 
 
 ## Overview
 
-APS Racer combines a custom handling model, three selectable physical course layouts, skin-specific production vehicle art, textured/prop-driven environments, automatic/manual transmission modes, a compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and an AI opponent in a complete three-lap event.
+APS Racer combines a custom handling model, three selectable physical course layouts, skin-specific production vehicle art, textured/prop-driven environments, trackside spectators and a physical race starter, automatic/manual transmission modes, a compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and an AI opponent in a complete three-lap event.
 
 ### Physics
 
@@ -120,6 +120,10 @@ Two event modes share the same checkpoint/timing system.
 
 Both modes include:
 - 3.25 second start countdown
+- a randomly selected Corey Feldman starter portrait during the countdown
+- the same starter physically standing at the start/finish line
+- starter/car collision: if Corey is hit, he tumbles, recovers, then joins the finish-line spectator group and becomes non-collidable
+- child spectators lining the circuit from protected positions behind the racing surface/barriers; spectators are visual-only and non-collidable
 - ordered checkpoints with direction validation
 - four timed sectors per lap
 - current lap, last lap, best lap and sector timing
@@ -279,6 +283,7 @@ The project uses GDScript and Godot's Compatibility renderer so desktop Linux, W
 - `vehicle_presets.json`: baked car setups
 - `track_model.gd`: selectable ROUND / FIGURE 8 / AIRFIELD geometry, barriers, track-limit wheel queries, grids, race gates and racing lines
 - `race_system.gd`: Race/Time Trial timing, lap validity, checkpoints, sectors, records and ghost replay
+- `starter_actor.gd`: randomized race starter, impact reaction and post-hit spectator-join state
 - `ai_driver.gd`: first racing-line AI controller
 - `themes.json`: reskinnable environment/UI definitions
 - `theme_system.gd`: active theme selection and tokens

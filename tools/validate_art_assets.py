@@ -72,6 +72,16 @@ def expected_assets(manifest):
             "id": f'ui:{spec["id"]}',
         })
 
+    for spec in manifest.get("starter", {}).get("portraits", []):
+        items.append({
+            "path": EXPORT / "shared" / "starter" / spec["filename"],
+            "required": bool(spec.get("required", True)),
+            "format": "png",
+            "size": tuple(spec["size"]),
+            "rgba": bool(spec.get("rgba", True)),
+            "id": f'starter:{spec["id"]}',
+        })
+
     for skin_id, skin in manifest["skins"].items():
         base = EXPORT / "skins" / skin_id / "environment"
         for spec in skin["environment"]:

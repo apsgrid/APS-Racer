@@ -1392,5 +1392,49 @@
     "3d_models",
     "licensed_cars",
     "bridge_figure_eight"
-  ]
+  ],
+  "starter": {
+    "portraits": [
+      {
+        "id": "corey_01",
+        "filename": "corey_01.png",
+        "size": [
+          512,
+          512
+        ],
+        "rgba": true,
+        "required": true
+      },
+      {
+        "id": "corey_02",
+        "filename": "corey_02.png",
+        "size": [
+          512,
+          512
+        ],
+        "rgba": true,
+        "required": true
+      },
+      {
+        "id": "corey_03",
+        "filename": "corey_03.png",
+        "size": [
+          512,
+          512
+        ],
+        "rgba": true,
+        "required": true
+      },
+      {
+        "id": "corey_04",
+        "filename": "corey_04.png",
+        "size": [
+          512,
+          512
+        ],
+        "rgba": true,
+        "required": true
+      }
+    ]
+  }
 }

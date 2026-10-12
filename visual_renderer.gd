@@ -168,6 +168,7 @@ func draw_static_world(
 	else:
 		_draw_neon_environment(canvas, theme, world_to_screen, pixels_per_meter)
 	_draw_track(canvas, theme, track, world_to_screen, world_points_to_screen, pixels_per_meter)
+	_draw_child_spectators(canvas, theme, track, world_to_screen, pixels_per_meter)
 	if track.course_id() == "round":
 		_draw_course_markers(canvas, theme, world_to_screen, pixels_per_meter)
 	elif track.course_id() == "airfield":
@@ -175,6 +176,102 @@ func draw_static_world(
 
 func draw_weather(canvas: CanvasItem, theme: ThemeSystem, visual_time: float) -> void:
 	_draw_weather(canvas, theme, visual_time)
+
+
+func _draw_child_spectators(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	track: TrackModel,
+	world_to_screen: Callable,
+	ppm: float
+) -> void:
+	var points: Array[Vector2] = track.spectator_points()
+	var shirts: Array[Color] = [
+		Color("#e35d6a"), Color("#f2c14e"), Color("#5bc0eb"), Color("#9bc53d"),
+		Color("#c77dff"), Color("#f28f3b"), Color("#70c1b3"), Color("#f6f7eb")
+	]
+	var hair: Array[Color] = [Color("#3b2618"), Color("#1f1a17"), Color("#6a4a2d"), Color("#c89f70")]
+	for i: int in range(points.size()):
+		var p: Vector2 = world_to_screen.call(points[i])
+		var shadow: Color = Color(0.0, 0.0, 0.0, 0.28)
+		canvas.draw_circle(p + Vector2(ppm * 0.08, ppm * 0.10), max(2.0, ppm * 0.22), shadow)
+		var shirt: Color = shirts[i % shirts.size()]
+		var body: Rect2 = Rect2(
+			p + Vector2(-ppm * 0.14, -ppm * 0.02),
+			Vector2(ppm * 0.28, ppm * 0.40)
+		)
+		canvas.draw_rect(body, shirt, true)
+		var skin: Color = Color("#d7ad8b") if i % 3 != 0 else Color("#8f6044")
+		canvas.draw_circle(p + Vector2(0.0, -ppm * 0.15), max(2.0, ppm * 0.12), skin)
+		canvas.draw_arc(p + Vector2(0.0, -ppm * 0.17), max(2.0, ppm * 0.13), PI, TAU, 8, hair[i % hair.size()], max(1.0, ppm * 0.05), true)
+
+func draw_starter_actor(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	starter: StarterActor,
+	world_to_screen: Callable,
+	ppm: float
+) -> void:
+	var p: Vector2 = world_to_screen.call(starter.position)
+	var clothing: Array[Color] = [
+		Color("#18181c"),
+		Color("#24212b"),
+		Color("#18191d"),
+		Color("#521d25")
+	]
+	var jacket: Color = clothing[starter.variant % clothing.size()]
+	var skin: Color = Color("#d4aa8b")
+	var hair: Color = Color("#151317")
+	var shadow: Color = Color(0.0, 0.0, 0.0, 0.34)
+
+	if starter.state == "hit":
+		canvas.draw_set_transform(p, starter.angle, Vector2(1.0, 0.35))
+		canvas.draw_circle(Vector2.ZERO, max(3.0, ppm * 0.46), shadow)
+		canvas.draw_set_transform(p, starter.angle, Vector2.ONE)
+		canvas.draw_rect(Rect2(Vector2(-ppm * 0.30, -ppm * 0.12), Vector2(ppm * 0.60, ppm * 0.24)), jacket, true)
+		canvas.draw_circle(Vector2(ppm * 0.34, 0.0), max(2.5, ppm * 0.13), skin)
+		canvas.draw_circle(Vector2(ppm * 0.37, -ppm * 0.04), max(2.0, ppm * 0.10), hair)
+		canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		return
+
+	canvas.draw_set_transform(p, starter.angle + PI * 0.5, Vector2.ONE)
+	canvas.draw_circle(Vector2(ppm * 0.08, ppm * 0.10), max(2.0, ppm * 0.24), shadow)
+	canvas.draw_rect(Rect2(Vector2(-ppm * 0.18, -ppm * 0.02), Vector2(ppm * 0.36, ppm * 0.52)), jacket, true)
+	canvas.draw_circle(Vector2(0.0, -ppm * 0.18), max(2.5, ppm * 0.14), skin)
+	canvas.draw_arc(Vector2(0.0, -ppm * 0.20), max(2.0, ppm * 0.15), PI, TAU, 10, hair, max(1.0, ppm * 0.06), true)
+	var accent: Color = theme.colour("accent")
+	canvas.draw_line(Vector2(-ppm * 0.16, ppm * 0.08), Vector2(ppm * 0.16, ppm * 0.08), accent, max(1.0, ppm * 0.04), true)
+	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func draw_starter_intro(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	starter: StarterActor,
+	race: RaceSystem,
+	view_size: Vector2
+) -> void:
+	if race.state != "countdown" or race.countdown < 1.90:
+		return
+	var texture: Texture2D = _asset_texture(starter.portrait_path())
+	if texture == null:
+		return
+
+	var panel_size: Vector2 = Vector2(330.0, 390.0)
+	var panel_rect: Rect2 = Rect2(view_size * 0.5 - panel_size * 0.5, panel_size)
+	var panel: Color = theme.colour("ui_panel")
+	panel.a = 0.96
+	var border: Color = theme.colour("accent")
+	border.a = 0.92
+	_draw_panel(canvas, panel_rect, panel, border, 16, 3)
+
+	var image_rect: Rect2 = Rect2(panel_rect.position + Vector2(18.0, 18.0), Vector2(294.0, 294.0))
+	canvas.draw_texture_rect(texture, image_rect, false, Color.WHITE)
+
+	var font: Font = ThemeDB.fallback_font
+	var text: Color = theme.colour("ui_text")
+	var accent: Color = theme.colour("accent2")
+	canvas.draw_string(font, panel_rect.position + Vector2(24.0, 342.0), "COREY FELDMAN", HORIZONTAL_ALIGNMENT_LEFT, -1, 25, text)
+	canvas.draw_string(font, panel_rect.position + Vector2(24.0, 370.0), "RACE STARTER", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, accent)
 
 func _draw_red_dirt_environment(
 	canvas: CanvasItem,

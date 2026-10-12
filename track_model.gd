@@ -509,6 +509,81 @@ func racing_line_points() -> Array[Vector2]:
 		_:
 			return _round_line_cache
 
+
+func starter_line_position() -> Vector2:
+	var gates: Array[Dictionary] = race_gates()
+	if gates.is_empty():
+		return Vector2.ZERO
+	var gate: Dictionary = gates[0]
+	var a: Vector2 = Vector2(gate.get("a", gate.get("position", Vector2.ZERO)))
+	var b: Vector2 = Vector2(gate.get("b", gate.get("position", Vector2.ZERO)))
+	return a.lerp(b, 0.30)
+
+func _ensure_off_road(point: Vector2, direction: Vector2) -> Vector2:
+	var p: Vector2 = point
+	var push: Vector2 = direction.normalized()
+	if push.length_squared() < 0.0001:
+		push = Vector2.UP
+	for i: int in range(12):
+		if not is_on_road(p):
+			return p
+		p += push * 1.15
+	return p
+
+func starter_crowd_position() -> Vector2:
+	if course_id() == "figure_eight":
+		return Vector2(0.0, -9.0)
+	var gates: Array[Dictionary] = race_gates()
+	if gates.is_empty():
+		return Vector2.ZERO
+	var gate: Dictionary = gates[0]
+	var a: Vector2 = Vector2(gate.get("a", gate.get("position", Vector2.ZERO)))
+	var b: Vector2 = Vector2(gate.get("b", gate.get("position", Vector2.ZERO)))
+	var outward: Vector2 = (a - b).normalized()
+	if outward.length_squared() < 0.0001:
+		outward = Vector2.UP
+	return _ensure_off_road(a + outward * 2.6, outward)
+
+func spectator_points() -> Array[Vector2]:
+	var result: Array[Vector2] = []
+	if course_id() == "figure_eight":
+		for i: int in range(0, _figure8_line_cache.size() - 1, 8):
+			var p: Vector2 = _figure8_line_cache[i]
+			if p.length() < 8.0:
+				continue
+			var direction: Vector2 = p.normalized()
+			var candidate: Vector2 = p + direction * (FIG8_BARRIER_HALF + 2.5)
+			result.append(_ensure_off_road(candidate, direction))
+		var corey_slot: Vector2 = starter_crowd_position()
+		result.append(_ensure_off_road(corey_slot + Vector2(-1.2, -0.4), Vector2.DOWN))
+		result.append(_ensure_off_road(corey_slot + Vector2(1.2, -0.4), Vector2.DOWN))
+		return result
+
+	var outer: PackedVector2Array = barrier_outer_points()
+	var inner: PackedVector2Array = barrier_inner_points()
+	var outer_step: int = max(3, int(outer.size() / 14))
+	var inner_step: int = max(3, int(inner.size() / 12))
+	for i: int in range(0, outer.size(), outer_step):
+		var p: Vector2 = outer[i]
+		var radial: Vector2 = p.normalized()
+		if radial.length_squared() < 0.0001:
+			radial = Vector2.UP
+		result.append(p + radial * 1.5)
+	for i: int in range(0, inner.size(), inner_step):
+		var p: Vector2 = inner[i]
+		var radial: Vector2 = p.normalized()
+		if radial.length_squared() < 0.0001:
+			radial = Vector2.UP
+		result.append(p - radial * 1.35)
+
+	var corey_slot: Vector2 = starter_crowd_position()
+	var corey_outward: Vector2 = corey_slot.normalized()
+	if corey_outward.length_squared() < 0.0001:
+		corey_outward = Vector2.UP
+	result.append(_ensure_off_road(corey_slot + Vector2(1.1, 0.5), corey_outward))
+	result.append(_ensure_off_road(corey_slot + Vector2(-1.0, -0.45), corey_outward))
+	return result
+
 func player_grid_pose() -> Dictionary:
 	if course_id() == "figure_eight":
 		return _figure8_grid_pose(-0.13, -0.80)

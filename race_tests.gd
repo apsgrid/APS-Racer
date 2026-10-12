@@ -9,6 +9,8 @@ func _init() -> void:
 	_test_ghost_memory_cap()
 	_test_time_trial_void_lap()
 	_test_track_limit_wheel_count()
+	_test_starter_actor()
+	_test_spectator_positions()
 	_test_dynamic_dry_line()
 	_test_ai_driver()
 
@@ -215,3 +217,40 @@ func _test_track_limit_wheel_count() -> void:
 	_assert(saw_two, "Track-limit scan never observed exactly two wheels off.")
 	_assert(saw_three_or_more, "Track-limit scan never observed more than two wheels off.")
 	print("Track limits | 2 wheels allowed | void threshold reached near y=%.2f" % trigger_y)
+
+func _test_starter_actor() -> void:
+	var track: TrackModel = TrackModel.new()
+	var starter: StarterActor = StarterActor.new()
+	starter.restart(track)
+	_assert(starter.variant >= 0 and starter.variant < StarterActor.VARIANT_COUNT, "Starter variant out of range.")
+	_assert(track.is_on_road(starter.position), "Starter did not begin on the racing surface.")
+	_assert(not track.is_on_road(starter.crowd_target), "Starter crowd target is still on the racing surface.")
+
+	var car: VehicleSim = VehicleSim.new()
+	car.set_preset(0)
+	car.position = starter.position
+	car.velocity = Vector2(14.0, 0.0)
+	var hit: bool = starter.try_hit(car)
+	_assert(hit, "Starter did not register a car impact.")
+	_assert(starter.state == "hit", "Starter did not enter hit state.")
+	_assert(starter.hit_speed_kph > 20.0, "Starter impact speed was not recorded.")
+
+	for i: int in range(1200):
+		starter.step(1.0 / 120.0)
+		if starter.is_with_crowd():
+			break
+	_assert(starter.is_with_crowd(), "Starter never joined the crowd after being hit.")
+	_assert(starter.position.distance_to(starter.crowd_target) < 0.15, "Starter did not settle into the crowd slot.")
+	_assert(not starter.try_hit(car), "Starter remained collidable after joining the crowd.")
+	print("Starter | hit %.1f km/h | joined crowd at %s" % [starter.hit_speed_kph, str(starter.position)])
+
+func _test_spectator_positions() -> void:
+	var track: TrackModel = TrackModel.new()
+	for course_index: int in range(3):
+		track.set_course(course_index)
+		var points: Array[Vector2] = track.spectator_points()
+		_assert(points.size() >= 10, "Course %s has too few trackside spectators." % track.course_name())
+		for point: Vector2 in points:
+			_assert(not track.is_on_road(point), "Spectator placed on racing surface in %s." % track.course_name())
+		_assert(not track.is_on_road(track.starter_crowd_position()), "Corey crowd slot is unsafe in %s." % track.course_name())
+	print("Spectators | ROUND/FIGURE 8/AIRFIELD safely outside racing surface")

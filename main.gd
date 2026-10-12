@@ -22,6 +22,7 @@ var visual_time: float = 0.0
 var telemetry_open: bool = false
 var weather_effects_enabled: bool = true
 var event_mode: String = "race"
+var starter: StarterActor = StarterActor.new()
 var haptic_cooldown: float = 0.0
 
 var skid_points: Array[Vector2] = []
@@ -77,6 +78,13 @@ func _physics_process(delta: float) -> void:
 			if event_mode == "race":
 				ai_driver.step(SIM_DT, ai_race.is_racing(), track)
 				_resolve_car_collision()
+
+			if race.is_racing():
+				starter.try_hit(sim)
+				if event_mode == "race":
+					starter.try_hit(ai_driver.sim)
+			starter.step(SIM_DT)
+
 			if race.is_racing():
 				var dry_line_traffic: Array[Vector2] = []
 				if sim.speed_kph() > 8.0:
@@ -420,6 +428,7 @@ func _start_event() -> void:
 	sim.angular_velocity = 0.0
 
 	ai_driver.restart(track)
+	starter.restart(track)
 
 	var time_trial: bool = event_mode == "time_trial"
 	race.configure(_race_key(), 1 if time_trial else 3, time_trial)
@@ -577,6 +586,14 @@ func _draw() -> void:
 		Callable(self, "_world_to_screen"),
 		pixels_per_meter
 	)
+	if starter.state == "line":
+		visuals.draw_starter_actor(
+			self,
+			themes,
+			starter,
+			Callable(self, "_world_to_screen"),
+			pixels_per_meter
+		)
 	if event_mode == "race":
 		visuals.draw_car(
 			self,
@@ -599,6 +616,14 @@ func _draw() -> void:
 		Callable(self, "_world_to_screen"),
 		pixels_per_meter
 	)
+	if starter.state != "line":
+		visuals.draw_starter_actor(
+			self,
+			themes,
+			starter,
+			Callable(self, "_world_to_screen"),
+			pixels_per_meter
+		)
 
 	var surface_name: String
 	if track.course_id() == "airfield":
@@ -642,3 +667,4 @@ func _draw() -> void:
 		event_mode == "time_trial",
 		sim.abs_enabled
 	)
+	visuals.draw_starter_intro(self, themes, starter, race, get_viewport_rect().size)
