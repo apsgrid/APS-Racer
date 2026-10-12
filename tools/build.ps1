@@ -2,17 +2,19 @@ param(
     [switch]$SkipTests,
     [switch]$WebOnly,
     [switch]$WindowsOnly,
-    [switch]$AndroidOnly
+    [switch]$AndroidOnly,
+    [switch]$LinuxOnly
 )
 
 $ErrorActionPreference = 'Stop'
 $Project = Split-Path -Parent $PSScriptRoot
 $Godot = Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe" -Filter "Godot_v4.7.2-stable_win64_console.exe" -Recurse -ErrorAction Stop | Select-Object -First 1 -ExpandProperty FullName
 
-$OnlyMode = $WebOnly -or $WindowsOnly -or $AndroidOnly
+$OnlyMode = $WebOnly -or $WindowsOnly -or $AndroidOnly -or $LinuxOnly
 $BuildWeb = (-not $OnlyMode) -or $WebOnly
 $BuildWindows = (-not $OnlyMode) -or $WindowsOnly
 $BuildAndroid = (-not $OnlyMode) -or $AndroidOnly
+$BuildLinux = (-not $OnlyMode) -or $LinuxOnly
 
 if (-not $SkipTests) {
     & py (Join-Path $Project "tools\validate_art_assets.py")
@@ -41,6 +43,15 @@ if ($BuildAndroid) {
     New-Item -ItemType Directory -Force -Path (Join-Path $Project "builds\android") | Out-Null
     & $Godot --headless --path $Project --export-debug "Android" (Join-Path $Project "builds\android\APSRacer-debug.apk")
     if ($LASTEXITCODE -ne 0) { throw "Android export failed." }
+}
+
+if ($BuildLinux) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $Project "builds\linux") | Out-Null
+    & $Godot --headless --path $Project --export-release "Linux / Steam Deck" (Join-Path $Project "builds\linux\APSRacer.x86_64")
+    if ($LASTEXITCODE -ne 0) { throw "Linux / Steam Deck export failed." }
+
+    & py (Join-Path $Project "tools\package_linux_release.py")
+    if ($LASTEXITCODE -ne 0) { throw "Linux / Steam Deck packaging failed." }
 }
 
 Write-Host "APS Racer build complete."

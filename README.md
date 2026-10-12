@@ -190,15 +190,17 @@ PowerShell:
 
     .\tools\build.ps1
 
-The build script runs handling tests first, then exports all three targets:
+The build script validates production art, runs handling/race tests, then exports all supported targets:
 
 - Web: builds/web/index.html
 - Windows: builds/windows/APSRacer.exe
 - Android ARM64 debug APK: builds/android/APSRacer-debug.apk
+- Linux x86_64 / Arch / Steam Deck: builds/linux/APSRacer.x86_64
+- Portable Linux archive: builds/linux/APSRacer-Linux-x86_64.tar.gz
 
-Use -WebOnly, -WindowsOnly, -AndroidOnly, or -SkipTests when appropriate.
+Use -WebOnly, -WindowsOnly, -AndroidOnly, -LinuxOnly, or -SkipTests when appropriate.
 
-The Web export has been smoke-tested in Chrome with WebGL 2 and the Compatibility renderer. The Android APK is zip-aligned, debug-signed, and targets Android 16 / API 36.
+The Web export has been smoke-tested in Chrome with WebGL 2 and the Compatibility renderer. The Android APK is zip-aligned, debug-signed, and targets Android 16 / API 36. The Linux build is a standard x86_64 ELF and has been smoke-tested under Linux; the tarball preserves executable permissions and includes a Steam Deck launcher/instructions.
 
 ### Web memory stability
 
@@ -216,10 +218,11 @@ The Web presentation path is designed to remain bounded during long sessions:
 Primary targets:
 
 - Windows development/reference build
+- Linux x86_64, including Arch Linux and Steam Deck / SteamOS
 - Android native APK
 - Web browser build
 
-The project uses GDScript and Godot's Compatibility renderer so Web and Android remain first-class targets.
+The project uses GDScript and Godot's Compatibility renderer so desktop Linux, Windows, Web and Android remain first-class targets.
 
 ## Architecture
 
