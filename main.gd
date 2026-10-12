@@ -3,6 +3,7 @@ extends Node2D
 const SIM_DT: float = 1.0 / 120.0
 const MAX_SKID_POINTS: int = 1200
 const MAX_SMOKE_PUFFS: int = 90
+const SETTINGS_PATH: String = "user://aps_racer_settings.json"
 
 var sim: VehicleSim = VehicleSim.new()
 var track: TrackModel = TrackModel.new()
@@ -19,6 +20,8 @@ var pixels_per_meter: float = 25.0
 var touches: Dictionary = {}
 var visual_time: float = 0.0
 var telemetry_open: bool = false
+var weather_effects_enabled: bool = true
+var haptic_cooldown: float = 0.0
 
 var skid_points: Array[Vector2] = []
 var previous_rear: Array[Vector2] = [Vector2.ZERO, Vector2.ZERO]
@@ -30,6 +33,7 @@ var tuning_panel: TuningPanel
 
 func _ready() -> void:
 	sim.set_preset(0)
+	_load_preferences()
 	ai_driver.setup(track)
 	camera_world = sim.position
 	static_world = StaticWorldLayer.new()
@@ -38,6 +42,7 @@ func _ready() -> void:
 	weather_layer = WeatherLayer.new()
 	add_child(weather_layer)
 	weather_layer.setup(themes)
+	weather_layer.set_effects_enabled(weather_effects_enabled)
 	tuning_panel = TuningPanel.new()
 	add_child(tuning_panel)
 	tuning_panel.setup(sim)
@@ -69,6 +74,14 @@ func _physics_process(delta: float) -> void:
 
 			ai_driver.step(SIM_DT, ai_race.is_racing(), track)
 			_resolve_car_collision()
+			if race.is_racing():
+				var dry_line_traffic: Array[Vector2] = []
+				if sim.speed_kph() > 8.0:
+					dry_line_traffic.append(sim.position)
+				if ai_driver.sim.speed_kph() > 8.0:
+					dry_line_traffic.append(ai_driver.sim.position)
+				if not dry_line_traffic.is_empty():
+					track.update_dry_line(SIM_DT, dry_line_traffic)
 
 			race.step(SIM_DT, sim.position, sim.angle, track)
 			ai_race.step(SIM_DT, ai_driver.sim.position, ai_driver.sim.angle, track)
@@ -80,6 +93,7 @@ func _physics_process(delta: float) -> void:
 
 	if not panel_open:
 		_update_smoke(delta)
+		_update_haptics(delta)
 
 	var speed: float = sim.velocity.length()
 	var look_ahead: Vector2 = sim.velocity * 0.16
@@ -106,8 +120,8 @@ func _record_tyre_effects(dt: float) -> void:
 			_add_skid_segment(previous_rear[1], rear_right)
 
 	smoke_spawn_cooldown = max(smoke_spawn_cooldown - dt, 0.0)
-	var ambient_trail: bool = moving and sim.speed_kph() > 28.0
-	var should_spawn: bool = slipping_left or slipping_right or ambient_trail
+	var ambient_trail: bool = weather_effects_enabled and moving and sim.speed_kph() > 28.0
+	var should_spawn: bool = weather_effects_enabled and (slipping_left or slipping_right or ambient_trail)
 	if moving and smoke_spawn_cooldown <= 0.0 and should_spawn:
 		smoke_positions.append((rear_left + rear_right) * 0.5)
 		smoke_life.append(0.72)
@@ -134,6 +148,19 @@ func _update_smoke(delta: float) -> void:
 		if smoke_life[i] <= 0.0:
 			smoke_life.remove_at(i)
 			smoke_positions.remove_at(i)
+
+func _update_haptics(delta: float) -> void:
+	haptic_cooldown = max(haptic_cooldown - delta, 0.0)
+	var joypads: Array[int] = Input.get_connected_joypads()
+	if joypads.is_empty():
+		return
+	var risk: float = sim.grip_risk()
+	if risk < 0.52 or haptic_cooldown > 0.0:
+		return
+	var weak: float = clamp((risk - 0.50) / 0.50, 0.0, 1.0) * 0.55
+	var strong: float = clamp((risk - 0.78) / 0.22, 0.0, 1.0) * 0.85
+	Input.start_joy_vibration(joypads[0], weak, strong, 0.11)
+	haptic_cooldown = 0.075
 
 func _read_controls() -> Dictionary:
 	if tuning_panel != null and tuning_panel.is_open():
@@ -211,6 +238,20 @@ func _input(event: InputEvent) -> void:
 			telemetry_open = not telemetry_open
 			queue_redraw()
 			return
+		elif event.keycode == KEY_V:
+			_toggle_weather_effects()
+			return
+		elif event.keycode == KEY_M:
+			_toggle_transmission()
+			return
+		elif event.keycode == KEY_Q:
+			sim.shift_down()
+			queue_redraw()
+			return
+		elif event.keycode == KEY_E:
+			sim.shift_up()
+			queue_redraw()
+			return
 		elif event.keycode == KEY_ESCAPE and tuning_panel.is_open():
 			tuning_panel.set_open(false)
 			return
@@ -233,6 +274,16 @@ func _input(event: InputEvent) -> void:
 			_select_preset(sim.preset_index - 1)
 		elif event.button_index == JOY_BUTTON_DPAD_RIGHT:
 			_select_preset(sim.preset_index + 1)
+		elif event.button_index == JOY_BUTTON_Y:
+			_toggle_transmission()
+		elif event.button_index == JOY_BUTTON_BACK:
+			_toggle_weather_effects()
+		elif event.button_index == JOY_BUTTON_LEFT_SHOULDER:
+			sim.shift_down()
+			queue_redraw()
+		elif event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
+			sim.shift_up()
+			queue_redraw()
 
 	if event is InputEventScreenTouch:
 		if event.pressed:
@@ -250,6 +301,16 @@ func _input(event: InputEvent) -> void:
 				_cycle_course()
 			elif Rect2(rects["data"]).has_point(event.position):
 				telemetry_open = not telemetry_open
+				queue_redraw()
+			elif Rect2(rects["weather"]).has_point(event.position):
+				_toggle_weather_effects()
+			elif Rect2(rects["transmission"]).has_point(event.position):
+				_toggle_transmission()
+			elif Rect2(rects["shift_down"]).has_point(event.position):
+				sim.shift_down()
+				queue_redraw()
+			elif Rect2(rects["shift_up"]).has_point(event.position):
+				sim.shift_up()
 				queue_redraw()
 		else:
 			touches.erase(event.index)
@@ -269,6 +330,40 @@ func _select_preset(index: int) -> void:
 func _on_tuning_car_selected(index: int) -> void:
 	_select_preset(index)
 
+func _toggle_weather_effects() -> void:
+	weather_effects_enabled = not weather_effects_enabled
+	smoke_positions.clear()
+	smoke_life.clear()
+	if weather_layer != null:
+		weather_layer.set_effects_enabled(weather_effects_enabled)
+	_save_preferences()
+	queue_redraw()
+
+func _toggle_transmission() -> void:
+	sim.toggle_manual_transmission()
+	_save_preferences()
+	queue_redraw()
+
+func _load_preferences() -> void:
+	if not FileAccess.file_exists(SETTINGS_PATH):
+		return
+	var file: FileAccess = FileAccess.open(SETTINGS_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if parsed is Dictionary:
+		weather_effects_enabled = bool(parsed.get("weather_effects", true))
+		sim.set_manual_transmission(bool(parsed.get("manual_transmission", false)))
+
+func _save_preferences() -> void:
+	var file: FileAccess = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify({
+		"weather_effects": weather_effects_enabled,
+		"manual_transmission": sim.transmission_manual
+	}, "\t"))
+
 func _cycle_theme() -> void:
 	themes.cycle(1)
 	_apply_theme()
@@ -280,6 +375,7 @@ func _race_key() -> String:
 
 func _start_event() -> void:
 	sim.reset()
+	track.reset_dry_line()
 	var player_pose: Dictionary = track.player_grid_pose()
 	sim.position = Vector2(player_pose["position"])
 	sim.angle = float(player_pose["angle"])
@@ -335,8 +431,7 @@ func _player_position_rank() -> int:
 
 func _cycle_course() -> void:
 	track.cycle_course(1)
-	if static_world != null:
-		static_world.refresh_theme()
+	_apply_theme()
 	_start_event()
 	queue_redraw()
 
@@ -345,12 +440,17 @@ func _apply_theme() -> void:
 		float(themes.value("road_mu", 1.0)),
 		float(themes.value("runoff_mu", 0.43))
 	)
+	track.set_wet_surface(
+		themes.id() == "brisbane_neon_rain" and track.course_id() != "airfield",
+		float(themes.value("dry_road_mu", 1.12))
+	)
 	if tuning_panel != null:
 		tuning_panel.apply_skin(themes.current())
 	if static_world != null:
 		static_world.refresh_theme()
 	if weather_layer != null:
 		weather_layer.refresh_theme()
+		weather_layer.set_effects_enabled(weather_effects_enabled)
 
 func _touch_active(control_name: String) -> bool:
 	var rects: Dictionary = _control_rects()
@@ -376,7 +476,11 @@ func _control_rects() -> Dictionary:
 		"data": Rect2(Vector2(view.x - 378.0, 20.0), top_button),
 		"tune": Rect2(Vector2(view.x - 286.0, 20.0), top_button),
 		"preset": Rect2(Vector2(view.x - 194.0, 20.0), top_button),
-		"reset": Rect2(Vector2(view.x - 102.0, 20.0), top_button)
+		"reset": Rect2(Vector2(view.x - 102.0, 20.0), top_button),
+		"shift_down": Rect2(Vector2(view.x - 378.0, 72.0), top_button),
+		"shift_up": Rect2(Vector2(view.x - 286.0, 72.0), top_button),
+		"transmission": Rect2(Vector2(view.x - 194.0, 72.0), top_button),
+		"weather": Rect2(Vector2(view.x - 102.0, 72.0), top_button)
 	}
 
 func _world_to_screen(world_pos: Vector2) -> Vector2:
@@ -399,6 +503,13 @@ func _draw() -> void:
 		pixels_per_meter,
 		visual_time
 	)
+	visuals.draw_dynamic_dry_line(
+		self,
+		themes,
+		track,
+		Callable(self, "_world_to_screen"),
+		pixels_per_meter
+	)
 	visuals.draw_skid_marks(
 		self,
 		themes,
@@ -406,14 +517,15 @@ func _draw() -> void:
 		Callable(self, "_world_to_screen"),
 		pixels_per_meter
 	)
-	visuals.draw_tyre_effects(
-		self,
-		themes,
-		smoke_positions,
-		smoke_life,
-		Callable(self, "_world_to_screen"),
-		pixels_per_meter
-	)
+	if weather_effects_enabled:
+		visuals.draw_tyre_effects(
+			self,
+			themes,
+			smoke_positions,
+			smoke_life,
+			Callable(self, "_world_to_screen"),
+			pixels_per_meter
+		)
 	visuals.draw_ghost_car(
 		self,
 		themes,
@@ -443,9 +555,15 @@ func _draw() -> void:
 		pixels_per_meter
 	)
 
-	var surface_name: String = String(themes.value("surface_name", "ROAD"))
-	if not track.is_on_road(sim.position):
-		surface_name = String(themes.value("runoff_name", "RUNOFF"))
+	var surface_name: String
+	if track.course_id() == "airfield":
+		surface_name = "TARMAC" if track.is_on_road(sim.position) else "GRASS"
+	else:
+		surface_name = String(themes.value("surface_name", "ROAD"))
+		if not track.is_on_road(sim.position):
+			surface_name = String(themes.value("runoff_name", "RUNOFF"))
+		elif track.wet_surface and sim.last_surface_mu > float(themes.value("road_mu", 1.0)) + 0.025:
+			surface_name = "DRYING LINE"
 
 	var joy_name: String = "NONE"
 	var joypads: Array[int] = Input.get_connected_joypads()
@@ -466,4 +584,14 @@ func _draw() -> void:
 		"tune": tuning_panel != null and tuning_panel.is_open()
 	}
 	var show_touch: bool = OS.has_feature("web") or OS.has_feature("android") or DisplayServer.is_touchscreen_available()
-	visuals.draw_touch_controls(self, themes, rects, active, show_touch, track.course_name())
+	visuals.draw_touch_controls(
+		self,
+		themes,
+		rects,
+		active,
+		show_touch,
+		track.course_name(),
+		weather_effects_enabled,
+		sim.transmission_manual,
+		sim.gear_label()
+	)

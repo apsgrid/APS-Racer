@@ -7,6 +7,7 @@ func _init() -> void:
 	_test_checkpoint_order_and_laps()
 	_test_ghost_playback()
 	_test_ghost_memory_cap()
+	_test_dynamic_dry_line()
 	_test_ai_driver()
 
 	if failures.is_empty():
@@ -98,9 +99,26 @@ func _test_ghost_memory_cap() -> void:
 	_assert(race.ghost_overflowed, "Ghost overflow flag was not set after reaching the cap.")
 	print("Ghost memory cap | frames ", race.current_ghost.size(), " / ", RaceSystem.MAX_GHOST_SAMPLES)
 
+func _test_dynamic_dry_line() -> void:
+	var track: TrackModel = TrackModel.new()
+	track.set_course(0)
+	track.set_surface_profile(0.96, 0.43)
+	track.set_wet_surface(true, 1.16)
+	var line: Array[Vector2] = track.racing_line_points()
+	var sample: Vector2 = line[0]
+	var wet_mu: float = track.surface_mu(sample)
+	var traffic: Array[Vector2] = [sample]
+	for i: int in range(900):
+		track.update_dry_line(1.0 / 120.0, traffic)
+	var dry_mu: float = track.surface_mu(sample)
+	_assert(dry_mu > wet_mu + 0.10, "Dynamic dry line did not gain meaningful grip.")
+	_assert(track.dry_line_average() > 0.01, "Dynamic dry line did not retain traffic state.")
+	print("Dry line | wet %.3f -> trafficked %.3f | average %.1f%%" % [wet_mu, dry_mu, track.dry_line_average() * 100.0])
+
 func _test_ai_driver() -> void:
 	_run_ai_course(0, 60.0, 0.75)
 	_run_ai_course(1, 105.0, 0.70)
+	_run_ai_course(2, 85.0, 0.76)
 
 func _run_ai_course(course_index: int, max_time: float, minimum_on_road: float) -> void:
 	var track: TrackModel = TrackModel.new()

@@ -5,6 +5,7 @@ const TILE: float = 256.0
 
 var themes: ThemeSystem
 var phase: Vector2 = Vector2.ZERO
+var effects_enabled: bool = true
 
 func setup(next_themes: ThemeSystem) -> void:
 	themes = next_themes
@@ -20,11 +21,20 @@ func refresh_theme() -> void:
 	position = Vector2.ZERO
 	queue_redraw()
 
+func set_effects_enabled(enabled: bool) -> void:
+	effects_enabled = enabled
+	visible = enabled
+	set_process(enabled)
+	if not enabled:
+		phase = Vector2.ZERO
+		position = Vector2.ZERO
+	queue_redraw()
+
 func _on_viewport_size_changed() -> void:
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	if themes == null:
+	if themes == null or not effects_enabled:
 		return
 	if themes.id() == "brisbane_neon_rain":
 		phase += Vector2(34.0, 185.0) * delta
@@ -33,7 +43,7 @@ func _process(delta: float) -> void:
 	position = Vector2(fposmod(phase.x, TILE) - TILE, fposmod(phase.y, TILE) - TILE)
 
 func _draw() -> void:
-	if themes == null:
+	if themes == null or not effects_enabled:
 		return
 	var view: Vector2 = get_viewport_rect().size
 	var cols: int = int(ceil(view.x / TILE)) + 3

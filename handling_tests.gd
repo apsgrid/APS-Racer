@@ -24,6 +24,15 @@ func _init() -> void:
 		if not bool(cornering["pass"]):
 			failures += 1
 
+	var drivetrain: Dictionary = _test_reverse_and_manual()
+	print("Reverse %.1f km/h | manual G1 %.1f -> G2 %.1f km/h" % [
+		float(drivetrain["reverse_kph"]),
+		float(drivetrain["gear1_kph"]),
+		float(drivetrain["gear2_kph"])
+	])
+	if not bool(drivetrain["pass"]):
+		failures += 1
+
 	if failures == 0:
 		print("RESULT: PASS")
 		quit(0)
@@ -79,3 +88,42 @@ func _test_cornering(preset: int) -> Dictionary:
 	var average_g: float = sum_g / float(max(samples, 1))
 	var passed: bool = peak_g > 0.25 and peak_g < 1.8 and average_g > 0.12
 	return {"peak_g": peak_g, "avg_g": average_g, "pass": passed}
+
+func _test_reverse_and_manual() -> Dictionary:
+	var reverse_car: VehicleSim = VehicleSim.new()
+	reverse_car.set_preset(0)
+	reverse_car.position = Vector2.ZERO
+	var reverse_elapsed: float = 0.0
+	while reverse_elapsed < 4.0:
+		reverse_car.step(DT, 0.0, 1.0, 0.0, false, _surface)
+		reverse_elapsed += DT
+	var reverse_kph: float = reverse_car.speed_kph()
+
+	var manual_car: VehicleSim = VehicleSim.new()
+	manual_car.set_preset(0)
+	manual_car.set_manual_transmission(true)
+	manual_car.position = Vector2.ZERO
+	var elapsed: float = 0.0
+	while elapsed < 8.0:
+		manual_car.step(DT, 1.0, 0.0, 0.0, false, _surface)
+		elapsed += DT
+	var gear1_kph: float = manual_car.speed_kph()
+	manual_car.shift_up()
+	elapsed = 0.0
+	while elapsed < 5.0:
+		manual_car.step(DT, 1.0, 0.0, 0.0, false, _surface)
+		elapsed += DT
+	var gear2_kph: float = manual_car.speed_kph()
+
+	var passed: bool = (
+		reverse_kph > 25.0 and reverse_kph < 52.0
+		and gear1_kph > 45.0 and gear1_kph < 64.0
+		and gear2_kph > gear1_kph + 15.0
+		and gear2_kph < 100.0
+	)
+	return {
+		"reverse_kph": reverse_kph,
+		"gear1_kph": gear1_kph,
+		"gear2_kph": gear2_kph,
+		"pass": passed
+	}

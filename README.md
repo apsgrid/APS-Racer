@@ -4,7 +4,7 @@ Top-down racing prototype built in Godot 4.7.2 with a custom four-wheel vehicle 
 
 ## Overview
 
-APS Racer combines a custom handling model, two selectable physical course layouts, skin-specific production vehicle art, textured/prop-driven environments, shared icon assets, a compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and an AI opponent in a complete three-lap event.
+APS Racer combines a custom handling model, three selectable physical course layouts, skin-specific production vehicle art, textured/prop-driven environments, automatic/manual transmission modes, a compact race HUD, mobile controls, Handling Lab, persistent lap records, ghost replay, and an AI opponent in a complete three-lap event.
 
 ### Physics
 
@@ -19,6 +19,9 @@ APS Racer combines a custom handling model, two selectable physical course layou
 - Asphalt and grass grip
 - Barrier collision response
 - Visible impact-speed telemetry
+- Progressive grip-limit meter and controller rumble warning
+- Automatic or six-speed manual transmission mode
+- Useful reverse drive with a deliberate speed limiter
 
 ### Cars
 
@@ -42,6 +45,8 @@ The visible vehicle is skin-specific while the underlying physics class remains 
 
 The six runtime composites are true top-down sprites with transparent backgrounds. Procedural cars remain only as a fallback if an art asset is missing.
 
+Transmission mode is independent of the selected car. **M** (keyboard) or **Y** (gamepad) switches AUTO/MANUAL. In manual mode use **Q/E** or the shoulder buttons to shift down/up.
+
 ### Courses
 
 Press **C** or tap the course button to switch layouts.
@@ -55,12 +60,19 @@ Press **C** or tap the course button to switch layouts.
 - tighter lobes and crossover
 - independent road ribbon, barrier collision geometry, grid, checkpoints and AI racing line
 
-Both courses support both visual skins. Course choice does not change the selected car or handling setup.
+**AIRFIELD**
+- grippy tarmac circuit around an airfield infield
+- long runway straights and fast end turns
+- aircraft, hangar, tower, runway markings and apron treatment
+- fixed high-grip tarmac profile independent of visual skin
 
-- Theme-selectable surface grip profile
+All courses support both visual skins. Course choice does not change the selected car or handling setup.
+
+- Theme-selectable surface grip profile on ROUND / FIGURE 8
+- Dynamic drying racing line on wet Brisbane Neon Rain surfaces
 - Braking/slalom markers rendered as environment-appropriate props
 - Skid marks
-- Dust or wet-road spray
+- Optional dust / rain / spray visual effects
 - Speed-dependent camera zoom and look-ahead
 
 ### Visual skins
@@ -77,13 +89,16 @@ Press **G** or tap **SKIN** to switch the presentation without changing the trac
 
 **Brisbane Neon Rain**
 - Brisbane at about 02:00
-- permanently raining
+- wet-road weather model with rain presentation
 - Neon GT / Hot Hatch / XC90 P2 Nightrunner vehicle family
 - wet-asphalt, puddle, reflection and lane-marking assets
 - neon barriers, urban props and road furniture
 - wet spray/splash VFX assets
+- dynamic traffic-dried racing line that gains grip as it develops
 - neon cyan/magenta edges and reflections
 - dark translucent cyberpunk UI
+
+Press **V** or use the **FX** touch control to hide rain, dust and tyre-weather effects without changing the underlying surface physics.
 
 Skin definitions live in `themes.json`. Rendering is isolated in `visual_renderer.gd`; physics remains in `vehicle_sim.gd`, and track geometry/collision remains in `track_model.gd`. A new skin should therefore be data plus optional renderer rules rather than a rewrite of game logic.
 
@@ -134,7 +149,10 @@ Keyboard:
 - R: reset
 - 1/2/3: select car
 - G: switch visual skin
-- C: switch ROUND / FIGURE 8 course
+- C: switch ROUND / FIGURE 8 / AIRFIELD course
+- M: toggle automatic/manual transmission
+- Q / E: shift down / up in manual mode
+- V: toggle weather/dirt visual effects
 - H: toggle telemetry drawer
 - T / F1: Handling Lab
 
@@ -143,7 +161,11 @@ Gamepad:
 - Right trigger or A: throttle
 - Left trigger or B: brake
 - X: handbrake
+- Y: toggle automatic/manual transmission
+- Left/right shoulder: shift down/up in manual mode
+- Back/View: toggle weather/dirt visual effects
 - D-pad left/right: change car
+- Grip-limit rumble increases as available tyre grip is exhausted
 
 Touch:
 - Left/right steering
@@ -151,7 +173,10 @@ Touch:
 - BRAKE
 - HANDBRAKE
 - SKIN
-- ROUND / FIG 8 course selector
+- ROUND / FIG 8 / AIR course selector
+- AUTO / M1-M6 transmission control
+- GEAR - / GEAR + in manual mode
+- FX ON / FX OFF
 - DATA
 - TUNE
 - CAR
@@ -168,10 +193,11 @@ The normal build script runs both suites automatically.
 
 Handling baseline:
 
-- RWD Sport: 0-100 km/h 4.97 s; 100-0 km/h 36.5 m
-- FWD Hatch: 0-100 km/h 5.60 s; 100-0 km/h 36.4 m
-- AWD Rally: 0-100 km/h 4.87 s; 100-0 km/h 38.9 m
-- Sustained cornering sanity check: about 1.0 g for all three presets
+- RWD Sport: 0-100 km/h 5.53 s; 100-0 km/h 33.3 m; sustained cornering 1.59 g
+- FWD Hatch: 0-100 km/h 5.83 s; 100-0 km/h 30.5 m; sustained cornering 1.57 g
+- AWD Rally: 0-100 km/h 5.44 s; 100-0 km/h 34.8 m; sustained cornering 1.64 g
+- Reverse reaches about 45 km/h
+- Manual first gear limits around 58 km/h; second gear around 92 km/h
 
 The numbers are regression baselines, not final realism targets.
 
@@ -181,8 +207,10 @@ Race baseline:
 - three-lap event completion
 - sector timing and best-lap retention
 - ghost capture/playback
-- AI completes three Red Dirt ROUND laps in about 43 seconds while remaining predominantly on-track
-- AI completes three Red Dirt FIGURE 8 laps in about 1:16 while remaining predominantly on-track
+- wet racing-line grip rises measurably under traffic
+- AI completes three Red Dirt ROUND laps in about 39 seconds while remaining predominantly on-track
+- AI completes three Red Dirt FIGURE 8 laps in about 49 seconds while remaining predominantly on-track
+- AI completes three AIRFIELD laps in about 50 seconds while remaining predominantly on-track
 
 ## Build
 

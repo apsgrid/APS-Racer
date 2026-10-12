@@ -3,6 +3,9 @@ extends RefCounted
 
 const G: float = 9.81
 const PRESET_PATH: String = "res://vehicle_presets.json"
+const MANUAL_GEAR_MAX_KPH: Array[float] = [0.0, 58.0, 92.0, 128.0, 168.0, 210.0, 255.0]
+const MANUAL_GEAR_FORCE_SCALE: Array[float] = [0.0, 1.12, 1.03, 0.95, 0.87, 0.80, 0.74]
+const REVERSE_MAX_KPH: float = 46.0
 
 const FALLBACK_PRESETS = [
 	{
@@ -10,9 +13,9 @@ const FALLBACK_PRESETS = [
 		"values": {
 			"mass": 1240.0, "inertia": 1850.0, "wheelbase": 2.55, "track_width": 1.58,
 			"cg_height": 0.52, "front_weight_fraction": 0.55, "drive_front_fraction": 0.0,
-			"max_engine_force": 7200.0, "reverse_force": 4200.0, "max_brake_force": 15500.0,
-			"front_brake_bias": 0.62, "base_tyre_mu": 1.12, "corner_stiffness": 3400.0,
-			"yaw_damping": 850.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
+			"max_engine_force": 6500.0, "reverse_force": 7200.0, "max_brake_force": 15500.0,
+			"front_brake_bias": 0.62, "base_tyre_mu": 1.65, "corner_stiffness": 3900.0,
+			"yaw_damping": 1100.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
 			"max_steer_low": 0.58, "max_steer_high": 0.18, "steering_rate": 2.8,
 			"handbrake_force": 5600.0, "handbrake_grip_scale": 0.54
 		}
@@ -22,9 +25,9 @@ const FALLBACK_PRESETS = [
 		"values": {
 			"mass": 1120.0, "inertia": 1580.0, "wheelbase": 2.45, "track_width": 1.54,
 			"cg_height": 0.56, "front_weight_fraction": 0.62, "drive_front_fraction": 1.0,
-			"max_engine_force": 6100.0, "reverse_force": 4200.0, "max_brake_force": 14800.0,
-			"front_brake_bias": 0.67, "base_tyre_mu": 1.05, "corner_stiffness": 3250.0,
-			"yaw_damping": 980.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
+			"max_engine_force": 5600.0, "reverse_force": 7000.0, "max_brake_force": 14800.0,
+			"front_brake_bias": 0.67, "base_tyre_mu": 1.60, "corner_stiffness": 3800.0,
+			"yaw_damping": 1220.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
 			"max_steer_low": 0.58, "max_steer_high": 0.18, "steering_rate": 2.8,
 			"handbrake_force": 5600.0, "handbrake_grip_scale": 0.54
 		}
@@ -34,9 +37,9 @@ const FALLBACK_PRESETS = [
 		"values": {
 			"mass": 1320.0, "inertia": 1980.0, "wheelbase": 2.58, "track_width": 1.61,
 			"cg_height": 0.58, "front_weight_fraction": 0.54, "drive_front_fraction": 0.48,
-			"max_engine_force": 7800.0, "reverse_force": 4200.0, "max_brake_force": 15800.0,
-			"front_brake_bias": 0.60, "base_tyre_mu": 1.08, "corner_stiffness": 3350.0,
-			"yaw_damping": 790.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
+			"max_engine_force": 7000.0, "reverse_force": 7400.0, "max_brake_force": 15800.0,
+			"front_brake_bias": 0.60, "base_tyre_mu": 1.68, "corner_stiffness": 3900.0,
+			"yaw_damping": 1050.0, "aero_drag": 0.43, "rolling_resistance": 145.0,
 			"max_steer_low": 0.58, "max_steer_high": 0.18, "steering_rate": 2.8,
 			"handbrake_force": 5600.0, "handbrake_grip_scale": 0.54
 		}
@@ -60,6 +63,8 @@ var steering_angle: float = 0.0
 
 var preset_index: int = 0
 var preset_name: String = "RWD SPORT"
+var transmission_manual: bool = false
+var current_gear: int = 1
 
 var mass: float = 1240.0
 var inertia: float = 1850.0
@@ -92,6 +97,7 @@ var wheel_loads: Array[float] = [0.0, 0.0, 0.0, 0.0]
 var wheel_grip_usage: Array[float] = [0.0, 0.0, 0.0, 0.0]
 var last_surface_mu: float = 1.0
 var last_impact_kph: float = 0.0
+var last_drive_scale: float = 1.0
 
 func reset() -> void:
 	position = Vector2(0.0, 12.0)
@@ -99,6 +105,8 @@ func reset() -> void:
 	angle = 0.0
 	angular_velocity = 0.0
 	steering_angle = 0.0
+	current_gear = 1
+	last_drive_scale = 1.0
 	last_long_accel = 0.0
 	last_lat_accel = 0.0
 	last_impact_kph = 0.0
@@ -185,10 +193,10 @@ func tuning_schema() -> Array[Dictionary]:
 		{"key":"front_weight_fraction", "label":"Front weight", "min":40.0, "max":70.0, "step":0.5, "unit":"%", "scale":100.0},
 		{"key":"drive_front_fraction", "label":"Drive to front", "min":0.0, "max":100.0, "step":1.0, "unit":"%", "scale":100.0},
 		{"key":"max_engine_force", "label":"Engine force", "min":3000.0, "max":12000.0, "step":100.0, "unit":"N"},
-		{"key":"reverse_force", "label":"Reverse force", "min":1500.0, "max":7000.0, "step":100.0, "unit":"N"},
+		{"key":"reverse_force", "label":"Reverse force", "min":1500.0, "max":9000.0, "step":100.0, "unit":"N"},
 		{"key":"max_brake_force", "label":"Brake force", "min":8000.0, "max":24000.0, "step":250.0, "unit":"N"},
 		{"key":"front_brake_bias", "label":"Front brake bias", "min":45.0, "max":80.0, "step":0.5, "unit":"%", "scale":100.0},
-		{"key":"base_tyre_mu", "label":"Tyre grip", "min":0.70, "max":1.50, "step":0.01, "unit":"mu"},
+		{"key":"base_tyre_mu", "label":"Tyre grip", "min":0.70, "max":2.50, "step":0.01, "unit":"mu"},
 		{"key":"corner_stiffness", "label":"Corner stiffness", "min":1800.0, "max":6000.0, "step":50.0, "unit":"N/(m/s)"},
 		{"key":"aero_drag", "label":"Aero drag", "min":0.15, "max":1.00, "step":0.01, "unit":""},
 		{"key":"rolling_resistance", "label":"Rolling resistance", "min":50.0, "max":350.0, "step":5.0, "unit":"N"},
@@ -217,6 +225,50 @@ func get_right() -> Vector2:
 
 func speed_kph() -> float:
 	return velocity.length() * 3.6
+
+func set_manual_transmission(enabled: bool) -> void:
+	transmission_manual = enabled
+	current_gear = clampi(current_gear, 1, 6)
+
+func toggle_manual_transmission() -> bool:
+	set_manual_transmission(not transmission_manual)
+	return transmission_manual
+
+func shift_up() -> void:
+	if transmission_manual:
+		current_gear = min(current_gear + 1, 6)
+
+func shift_down() -> void:
+	if transmission_manual:
+		current_gear = max(current_gear - 1, 1)
+
+func gear_label() -> String:
+	return "M%d" % current_gear if transmission_manual else "AUTO"
+
+func grip_risk() -> float:
+	var usage: float = 0.0
+	var slip: float = 0.0
+	for i: int in range(4):
+		usage = max(usage, wheel_grip_usage[i])
+		slip = max(slip, abs(wheel_slip_angles[i]))
+	var usage_risk: float = clamp((usage - 0.72) / 0.30, 0.0, 1.0)
+	var slip_risk: float = clamp((slip - 3.0) / 9.0, 0.0, 1.0)
+	return max(usage_risk, slip_risk)
+
+func _manual_drive_scale(body_forward_speed: float) -> float:
+	if not transmission_manual:
+		return 1.0
+	var gear: int = clampi(current_gear, 1, 6)
+	var speed: float = max(body_forward_speed * 3.6, 0.0)
+	var upper: float = MANUAL_GEAR_MAX_KPH[gear]
+	if speed >= upper:
+		return 0.04
+	var lower: float = 0.0 if gear == 1 else MANUAL_GEAR_MAX_KPH[gear - 1] * 0.52
+	var low_factor: float = 1.0
+	if gear > 1 and speed < lower:
+		low_factor = lerp(0.35, 1.0, clamp(speed / max(lower, 1.0), 0.0, 1.0))
+	var limiter_factor: float = clamp((upper - speed) / 12.0, 0.18, 1.0)
+	return MANUAL_GEAR_FORCE_SCALE[gear] * low_factor * limiter_factor
 
 func get_wheel_offsets() -> Array[Vector2]:
 	var front_x: float = wheelbase * (1.0 - front_weight_fraction)
@@ -257,7 +309,9 @@ func step(dt: float, throttle: float, brake: float, steer_input: float, handbrak
 	var net_force: Vector2 = Vector2.ZERO
 	var net_torque: float = 0.0
 	var body_forward_speed: float = velocity.dot(forward)
-	var reversing: bool = brake > 0.05 and abs(body_forward_speed) < 0.8 and throttle < 0.05
+	var reversing: bool = brake > 0.05 and body_forward_speed < 0.8 and throttle < 0.05
+	var drive_scale: float = _manual_drive_scale(body_forward_speed)
+	last_drive_scale = drive_scale
 
 	for i: int in range(4):
 		var local_offset: Vector2 = wheel_offsets[i]
@@ -282,9 +336,11 @@ func step(dt: float, throttle: float, brake: float, steer_input: float, handbrak
 		var requested_long: float = 0.0
 		var axle_drive_fraction: float = drive_front_fraction if is_front else (1.0 - drive_front_fraction)
 		if throttle > 0.0:
-			requested_long += throttle * max_engine_force * axle_drive_fraction * 0.5
+			requested_long += throttle * max_engine_force * drive_scale * axle_drive_fraction * 0.5
 		if reversing:
-			requested_long -= brake * reverse_force * axle_drive_fraction * 0.5
+			var reverse_kph: float = max(-body_forward_speed * 3.6, 0.0)
+			var reverse_taper: float = clamp((REVERSE_MAX_KPH - reverse_kph) / 12.0, 0.0, 1.0)
+			requested_long -= brake * reverse_force * reverse_taper * axle_drive_fraction * 0.5
 
 		if brake > 0.0 and not reversing:
 			var axle_brake: float = max_brake_force * (front_brake_bias if is_front else (1.0 - front_brake_bias))

@@ -58,6 +58,8 @@ func step(dt: float, allow_drive: bool, track: TrackModel) -> void:
 	var target_speed: float
 	if track.course_id() == "figure_eight":
 		target_speed = lerp(25.0, 12.5, clamp(turn_demand / 0.90, 0.0, 1.0))
+	elif track.course_id() == "airfield":
+		target_speed = lerp(46.0, 21.0, clamp(turn_demand / 1.10, 0.0, 1.0))
 	else:
 		target_speed = lerp(38.0, 20.0, clamp(turn_demand / 1.15, 0.0, 1.0))
 
@@ -65,12 +67,12 @@ func step(dt: float, allow_drive: bool, track: TrackModel) -> void:
 	var brake: float = 0.0
 	if speed_ms > target_speed:
 		throttle = 0.05
-		var brake_scale: float = 5.0 if track.course_id() == "figure_eight" else 8.0
+		var brake_scale: float = 5.0 if track.course_id() == "figure_eight" else (10.0 if track.course_id() == "airfield" else 8.0)
 		brake = clamp((speed_ms - target_speed) / brake_scale, 0.0, 1.0)
 	elif turn_demand > 0.95:
-		throttle = 0.35 if track.course_id() == "figure_eight" else 0.45
+		throttle = 0.35 if track.course_id() == "figure_eight" else (0.52 if track.course_id() == "airfield" else 0.45)
 	elif turn_demand > 0.62:
-		throttle = 0.58 if track.course_id() == "figure_eight" else 0.72
+		throttle = 0.58 if track.course_id() == "figure_eight" else (0.80 if track.course_id() == "airfield" else 0.72)
 
 	last_controls = {
 		"steer": steer,

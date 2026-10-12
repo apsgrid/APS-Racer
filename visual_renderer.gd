@@ -161,13 +161,17 @@ func draw_static_world(
 	world_points_to_screen: Callable,
 	pixels_per_meter: float
 ) -> void:
-	if theme.id() == "red_dirt":
+	if track.course_id() == "airfield":
+		_draw_airfield_environment(canvas, theme, world_to_screen, pixels_per_meter)
+	elif theme.id() == "red_dirt":
 		_draw_red_dirt_environment(canvas, theme, world_to_screen, pixels_per_meter)
 	else:
 		_draw_neon_environment(canvas, theme, world_to_screen, pixels_per_meter)
 	_draw_track(canvas, theme, track, world_to_screen, world_points_to_screen, pixels_per_meter)
 	if track.course_id() == "round":
 		_draw_course_markers(canvas, theme, world_to_screen, pixels_per_meter)
+	elif track.course_id() == "airfield":
+		_draw_airfield_plane(canvas, theme, world_to_screen, pixels_per_meter)
 
 func draw_weather(canvas: CanvasItem, theme: ThemeSystem, visual_time: float) -> void:
 	_draw_weather(canvas, theme, visual_time)
@@ -234,6 +238,104 @@ func _draw_red_dirt_props(
 	_draw_panel(canvas, Rect2(sign_pos - Vector2(48, 20), Vector2(96, 40)), Color("#573325"), theme.colour("accent"), 5, 2)
 	var font: Font = ThemeDB.fallback_font
 	canvas.draw_string(font, sign_pos + Vector2(-34, 6), "RED DIRT", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, theme.colour("ui_text"))
+
+func _draw_airfield_environment(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	world_to_screen: Callable,
+	ppm: float
+) -> void:
+	var grass_a: Vector2 = world_to_screen.call(Vector2(-78.0, -42.0))
+	var grass_b: Vector2 = world_to_screen.call(Vector2(78.0, 42.0))
+	canvas.draw_rect(Rect2(grass_a, grass_b - grass_a), Color("#39433b"))
+
+	for y: float in [-31.0, 31.0]:
+		var apron_a: Vector2 = world_to_screen.call(Vector2(-60.0, y - 2.0))
+		var apron_b: Vector2 = world_to_screen.call(Vector2(60.0, y + 2.0))
+		canvas.draw_rect(Rect2(apron_a, apron_b - apron_a), Color("#4b5050"))
+
+	var hangar_a: Vector2 = world_to_screen.call(Vector2(-29.0, -7.0))
+	var hangar_b: Vector2 = world_to_screen.call(Vector2(-18.0, 7.0))
+	canvas.draw_rect(Rect2(hangar_a, hangar_b - hangar_a), Color("#596167"))
+	canvas.draw_rect(Rect2(hangar_a, hangar_b - hangar_a), Color("#9aa2a6"), false, max(2.0, ppm * 0.08))
+
+	var tower: Vector2 = world_to_screen.call(Vector2(28.0, 0.0))
+	canvas.draw_circle(tower, max(8.0, ppm * 0.55), Color("#30363a"))
+	canvas.draw_circle(tower, max(5.0, ppm * 0.36), Color("#87939a"))
+	var glass: Color = theme.colour("accent")
+	glass.a = 0.55
+	canvas.draw_circle(tower, max(3.0, ppm * 0.22), glass)
+
+func _draw_airfield_plane(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	world_to_screen: Callable,
+	ppm: float
+) -> void:
+	var body: Color = Color("#d6dadd")
+	var edge: Color = Color("#69747b")
+	var shadow: Color = Color(0.05, 0.06, 0.07, 0.32)
+	var centre: Vector2 = Vector2(3.0, 0.0)
+
+	var shadow_points: PackedVector2Array = PackedVector2Array([
+		world_to_screen.call(centre + Vector2(-11.0, -1.0)) + Vector2(5, 6),
+		world_to_screen.call(centre + Vector2(8.5, -1.0)) + Vector2(5, 6),
+		world_to_screen.call(centre + Vector2(12.0, 0.0)) + Vector2(5, 6),
+		world_to_screen.call(centre + Vector2(8.5, 1.0)) + Vector2(5, 6),
+		world_to_screen.call(centre + Vector2(-11.0, 1.0)) + Vector2(5, 6)
+	])
+	canvas.draw_colored_polygon(shadow_points, shadow)
+
+	var wing: PackedVector2Array = PackedVector2Array([
+		world_to_screen.call(centre + Vector2(-1.0, -8.0)),
+		world_to_screen.call(centre + Vector2(2.8, -8.0)),
+		world_to_screen.call(centre + Vector2(5.0, -1.0)),
+		world_to_screen.call(centre + Vector2(5.0, 1.0)),
+		world_to_screen.call(centre + Vector2(2.8, 8.0)),
+		world_to_screen.call(centre + Vector2(-1.0, 8.0)),
+		world_to_screen.call(centre + Vector2(0.8, 1.0)),
+		world_to_screen.call(centre + Vector2(0.8, -1.0))
+	])
+	canvas.draw_colored_polygon(wing, body.darkened(0.04))
+	canvas.draw_polyline(_closed(wing), edge, max(1.5, ppm * 0.05), true)
+
+	var fuselage: PackedVector2Array = PackedVector2Array([
+		world_to_screen.call(centre + Vector2(-11.0, -1.0)),
+		world_to_screen.call(centre + Vector2(8.2, -1.0)),
+		world_to_screen.call(centre + Vector2(11.8, 0.0)),
+		world_to_screen.call(centre + Vector2(8.2, 1.0)),
+		world_to_screen.call(centre + Vector2(-11.0, 1.0))
+	])
+	canvas.draw_colored_polygon(fuselage, body)
+	canvas.draw_polyline(_closed(fuselage), edge, max(1.5, ppm * 0.05), true)
+
+	var tail: PackedVector2Array = PackedVector2Array([
+		world_to_screen.call(centre + Vector2(-9.4, -4.0)),
+		world_to_screen.call(centre + Vector2(-6.7, -3.2)),
+		world_to_screen.call(centre + Vector2(-5.2, -0.7)),
+		world_to_screen.call(centre + Vector2(-5.2, 0.7)),
+		world_to_screen.call(centre + Vector2(-6.7, 3.2)),
+		world_to_screen.call(centre + Vector2(-9.4, 4.0)),
+		world_to_screen.call(centre + Vector2(-8.3, 0.8)),
+		world_to_screen.call(centre + Vector2(-8.3, -0.8))
+	])
+	canvas.draw_colored_polygon(tail, body.darkened(0.08))
+	canvas.draw_polyline(_closed(tail), edge, max(1.5, ppm * 0.045), true)
+
+	for y: float in [-3.8, 3.8]:
+		var engine: Vector2 = world_to_screen.call(centre + Vector2(2.8, y))
+		canvas.draw_circle(engine, max(3.0, ppm * 0.25), edge)
+		canvas.draw_circle(engine, max(2.0, ppm * 0.16), Color("#1d252b"))
+
+	var stripe: Color = theme.colour("accent")
+	stripe.a = 0.72
+	canvas.draw_line(
+		world_to_screen.call(centre + Vector2(-7.5, 0.0)),
+		world_to_screen.call(centre + Vector2(8.5, 0.0)),
+		stripe,
+		max(1.5, ppm * 0.08),
+		true
+	)
 
 func _draw_neon_environment(
 	canvas: CanvasItem,
@@ -303,6 +405,9 @@ func _draw_track(
 	if track.course_id() == "figure_eight":
 		_draw_figure8_track(canvas, theme, track, world_to_screen, world_points_to_screen, ppm)
 		return
+	if track.course_id() == "airfield":
+		_draw_airfield_track(canvas, theme, track, world_to_screen, world_points_to_screen, ppm)
+		return
 
 	var outer: PackedVector2Array = world_points_to_screen.call(track.road_outer_points())
 	var inner: PackedVector2Array = world_points_to_screen.call(track.road_inner_points())
@@ -324,6 +429,79 @@ func _draw_track(
 		_draw_barrier_line(canvas, theme, inner_barrier, ppm)
 
 	_draw_start_line(canvas, theme, world_to_screen, ppm)
+
+
+func _draw_airfield_track(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	track: TrackModel,
+	world_to_screen: Callable,
+	world_points_to_screen: Callable,
+	ppm: float
+) -> void:
+	var outer: PackedVector2Array = world_points_to_screen.call(track.road_outer_points())
+	var inner: PackedVector2Array = world_points_to_screen.call(track.road_inner_points())
+	var tarmac: Color = Color("#4b4f52")
+	var infield: Color = Color("#39433b")
+	canvas.draw_colored_polygon(outer, tarmac)
+	canvas.draw_colored_polygon(inner, infield)
+
+	var outer_barrier: PackedVector2Array = world_points_to_screen.call(track.barrier_outer_points())
+	var inner_barrier: PackedVector2Array = world_points_to_screen.call(track.barrier_inner_points())
+	if outer_barrier.size() > 1:
+		outer_barrier.append(outer_barrier[0])
+		canvas.draw_polyline(outer_barrier, Color("#23282b"), max(4.0, ppm * 0.22), true)
+		canvas.draw_polyline(outer_barrier, Color("#aeb6ba"), max(1.5, ppm * 0.07), true)
+	if inner_barrier.size() > 1:
+		inner_barrier.append(inner_barrier[0])
+		canvas.draw_polyline(inner_barrier, Color("#23282b"), max(4.0, ppm * 0.22), true)
+		canvas.draw_polyline(inner_barrier, Color("#aeb6ba"), max(1.5, ppm * 0.07), true)
+
+	var white: Color = Color(0.95, 0.95, 0.92, 0.78)
+	var yellow: Color = Color("#f0c64a")
+	yellow.a = 0.76
+	for x: int in range(-48, 49, 12):
+		for y: float in [-16.7, 16.7]:
+			canvas.draw_line(
+				world_to_screen.call(Vector2(float(x) - 3.3, y)),
+				world_to_screen.call(Vector2(float(x) + 3.3, y)),
+				white,
+				max(2.0, ppm * 0.10),
+				true
+			)
+	for y2: int in range(-6, 7, 4):
+		for x2: float in [-55.2, 55.2]:
+			canvas.draw_line(
+				world_to_screen.call(Vector2(x2, float(y2) - 1.2)),
+				world_to_screen.call(Vector2(x2, float(y2) + 1.2)),
+				yellow,
+				max(1.5, ppm * 0.065),
+				true
+			)
+
+	var runway_edge: Color = Color(0.92, 0.92, 0.88, 0.34)
+	for y3: float in [-12.2, 12.2, -21.2, 21.2]:
+		canvas.draw_line(
+			world_to_screen.call(Vector2(-45.0, y3)),
+			world_to_screen.call(Vector2(45.0, y3)),
+			runway_edge,
+			max(1.0, ppm * 0.045),
+			true
+		)
+
+	var font: Font = ThemeDB.fallback_font
+	for label_pos: Vector2 in [Vector2(-39.0, 16.7), Vector2(39.0, -16.7)]:
+		var p: Vector2 = world_to_screen.call(label_pos)
+		canvas.draw_string(font, p + Vector2(-10, 5), "27", HORIZONTAL_ALIGNMENT_LEFT, -1, max(11, int(ppm * 0.46)), white)
+
+	var gate: Dictionary = track.race_gates()[0]
+	var a: Vector2 = world_to_screen.call(Vector2(gate["a"]))
+	var b: Vector2 = world_to_screen.call(Vector2(gate["b"]))
+	var delta: Vector2 = (b - a) / 12.0
+	for i: int in range(12):
+		var p0: Vector2 = a + delta * float(i)
+		var p1: Vector2 = a + delta * float(i + 1)
+		canvas.draw_line(p0, p1, Color.WHITE if i % 2 == 0 else Color("#151719"), max(5.0, ppm * 0.22), true)
 
 func _draw_figure8_track(
 	canvas: CanvasItem,
@@ -540,6 +718,31 @@ func _draw_weather(canvas: CanvasItem, theme: ThemeSystem, visual_time: float) -
 			var y2: float = fposmod(float(i * 59) + visual_time * 11.0, size.y + 60.0) - 30.0
 			canvas.draw_circle(Vector2(x2, y2), 1.0 + float(i % 3), dust)
 
+
+func draw_dynamic_dry_line(
+	canvas: CanvasItem,
+	theme: ThemeSystem,
+	track: TrackModel,
+	world_to_screen: Callable,
+	ppm: float
+) -> void:
+	if theme.id() != "brisbane_neon_rain" or not track.wet_surface:
+		return
+	for segment: Dictionary in track.dry_line_segments():
+		var level: float = float(segment.get("level", 0.0))
+		if level <= 0.01:
+			continue
+		var a: Vector2 = world_to_screen.call(Vector2(segment["a"]))
+		var b: Vector2 = world_to_screen.call(Vector2(segment["b"]))
+		var dry: Color = Color("#263038")
+		dry.a = 0.08 + 0.23 * level
+		var width: float = max(3.0, ppm * 1.70)
+		canvas.draw_line(a, b, dry, width, true)
+		canvas.draw_circle(a, width * 0.5, dry)
+		var centre: Color = Color("#56616a")
+		centre.a = 0.02 + 0.07 * level
+		canvas.draw_line(a, b, centre, max(1.0, ppm * 0.18), true)
+
 func draw_skid_marks(
 	canvas: CanvasItem,
 	theme: ThemeSystem,
@@ -713,7 +916,7 @@ func draw_hud(
 	var text: Color = theme.colour("ui_text")
 	var muted: Color = theme.colour("ui_muted")
 
-	var main_rect: Rect2 = Rect2(18, 18, 344, 126)
+	var main_rect: Rect2 = Rect2(18, 18, 344, 150)
 	_draw_panel(canvas, main_rect, bg, border, 10, 2)
 
 	canvas.draw_string(font, Vector2(34, 44), sim.preset_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, text)
@@ -723,15 +926,31 @@ func draw_hud(
 	var speed_text: String = "%03d" % int(round(sim.speed_kph()))
 	canvas.draw_string(font, Vector2(34, 113), speed_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 44, text)
 	canvas.draw_string(font, Vector2(142, 108), "KM/H", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, muted)
+	canvas.draw_string(font, Vector2(142, 128), sim.gear_label(), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, theme.colour("accent2"))
 
 	var stat_x: float = 222.0
 	canvas.draw_string(font, Vector2(stat_x, 86), "LAT  %+.2f G" % (sim.last_lat_accel / 9.81), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, muted)
 	canvas.draw_string(font, Vector2(stat_x, 106), "LONG %+.2f G" % (sim.last_long_accel / 9.81), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, muted)
 	canvas.draw_string(font, Vector2(stat_x, 126), surface_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, theme.colour("accent2"))
 
+	var risk: float = sim.grip_risk()
+	var risk_bg: Rect2 = Rect2(stat_x, 137, 116, 7)
+	canvas.draw_rect(risk_bg, Color(0, 0, 0, 0.38), true)
+	var risk_colour: Color = theme.colour("success").lerp(theme.colour("danger"), risk)
+	canvas.draw_rect(Rect2(risk_bg.position, Vector2(risk_bg.size.x * risk, risk_bg.size.y)), risk_colour, true)
+	canvas.draw_string(
+		font,
+		Vector2(stat_x, 158),
+		"GRIP %d%%" % int(round(risk * 100.0)),
+		HORIZONTAL_ALIGNMENT_LEFT,
+		-1,
+		10,
+		risk_colour if risk > 0.52 else muted
+	)
+
 	if sim.last_impact_kph > 1.0:
 		var impact: Color = theme.colour("danger")
-		canvas.draw_string(font, Vector2(34, 137), "IMPACT %.0f" % sim.last_impact_kph, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, impact)
+		canvas.draw_string(font, Vector2(34, 157), "IMPACT %.0f" % sim.last_impact_kph, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, impact)
 
 	if telemetry_open:
 		_draw_telemetry_panel(canvas, theme, sim, joy_name)
@@ -747,13 +966,13 @@ func _draw_telemetry_panel(
 	bg.a = 0.94
 	var border: Color = theme.colour("accent2")
 	border.a = 0.55
-	var rect: Rect2 = Rect2(18, 154, 344, 254)
+	var rect: Rect2 = Rect2(18, 180, 344, 254)
 	_draw_panel(canvas, rect, bg, border, 9, 1)
 
 	var title: Color = theme.colour("accent2")
 	var text: Color = theme.colour("ui_text")
 	var muted: Color = theme.colour("ui_muted")
-	canvas.draw_string(font, Vector2(34, 179), "TELEMETRY", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, title)
+	canvas.draw_string(font, Vector2(34, 205), "TELEMETRY", HORIZONTAL_ALIGNMENT_LEFT, -1, 15, title)
 
 	var lines: Array[String] = [
 		"Steer %+.1f deg    Yaw %+.1f deg/s" % [rad_to_deg(sim.steering_angle), rad_to_deg(sim.angular_velocity)],
@@ -766,7 +985,7 @@ func _draw_telemetry_panel(
 		"Controller: " + joy_name
 	]
 	for i: int in range(lines.size()):
-		canvas.draw_string(font, Vector2(34, 205 + i * 24), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, text if i < 5 else muted)
+		canvas.draw_string(font, Vector2(34, 231 + i * 24), lines[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 13, text if i < 5 else muted)
 
 func draw_touch_controls(
 	canvas: CanvasItem,
@@ -774,7 +993,10 @@ func draw_touch_controls(
 	rects: Dictionary,
 	active: Dictionary,
 	show_touch: bool,
-	course_name: String
+	course_name: String,
+	weather_enabled: bool,
+	manual_mode: bool,
+	gear_label: String
 ) -> void:
 	if not show_touch:
 		return
@@ -788,12 +1010,22 @@ func draw_touch_controls(
 	_draw_round_button(canvas, theme, Rect2(rects["throttle"]), "GO", bool(active.get("throttle", false)), false)
 	_draw_small_button(canvas, theme, Rect2(rects["handbrake"]), "HANDBRAKE", bool(active.get("handbrake", false)))
 
+	var course_label: String = "FIG 8" if course_name == "FIGURE 8" else ("AIR" if course_name == "AIRFIELD" else "ROUND")
 	_draw_small_button(canvas, theme, Rect2(rects["theme"]), "SKIN", false, "skin")
-	_draw_small_button(canvas, theme, Rect2(rects["course"]), "FIG 8" if course_name == "FIGURE 8" else "ROUND", false, "course")
+	_draw_small_button(canvas, theme, Rect2(rects["course"]), course_label, false, "course")
 	_draw_small_button(canvas, theme, Rect2(rects["data"]), "DATA", bool(active.get("data", false)), "data")
 	_draw_small_button(canvas, theme, Rect2(rects["tune"]), "TUNE", bool(active.get("tune", false)), "tune")
 	_draw_small_button(canvas, theme, Rect2(rects["preset"]), "CAR", false, "car")
 	_draw_small_button(canvas, theme, Rect2(rects["reset"]), "RESET", false, "reset")
+
+	if manual_mode:
+		_draw_small_button(canvas, theme, Rect2(rects["shift_down"]), "GEAR -", false)
+		_draw_small_button(canvas, theme, Rect2(rects["shift_up"]), "GEAR +", false)
+	else:
+		_draw_small_button(canvas, theme, Rect2(rects["shift_down"]), "-", false)
+		_draw_small_button(canvas, theme, Rect2(rects["shift_up"]), "+", false)
+	_draw_small_button(canvas, theme, Rect2(rects["transmission"]), gear_label, manual_mode)
+	_draw_small_button(canvas, theme, Rect2(rects["weather"]), "FX ON" if weather_enabled else "FX OFF", weather_enabled)
 
 func _draw_round_button(
 	canvas: CanvasItem,
