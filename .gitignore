@@ -3,3 +3,5 @@ builds/*
 !builds/.gdignore
 exports/
 *.tmp
+__pycache__/
+*.pyc

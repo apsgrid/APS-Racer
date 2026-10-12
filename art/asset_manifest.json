@@ -1,0 +1,1396 @@
+{
+  "schema_version": 1,
+  "milestone": "v0.6.0",
+  "coordinate_contract": {
+    "source_vehicle_nose": "up",
+    "vehicle_pivot_normalized": [
+      0.5,
+      0.5
+    ],
+    "source_colour_space": "sRGB",
+    "alpha": "straight",
+    "true_top_down": true,
+    "max_visual_collision_overshoot_percent": 12
+  },
+  "vehicle_packages": [
+    {
+      "id": "desert_prerunner",
+      "skin": "red_dirt",
+      "physics_class": "rwd_sport",
+      "display_archetype": "Desert Prerunner",
+      "master_canvas": [
+        1024,
+        1024
+      ],
+      "nose_direction": "up",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "files": [
+        {
+          "suffix": "composite",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "body",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "glass",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "shadow",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "front_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "rear_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "headlights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "brakelights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "dirt_overlay",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "baja_compact",
+      "skin": "red_dirt",
+      "physics_class": "fwd_hatch",
+      "display_archetype": "Baja Compact",
+      "master_canvas": [
+        1024,
+        1024
+      ],
+      "nose_direction": "up",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "files": [
+        {
+          "suffix": "composite",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "body",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "glass",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "shadow",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "front_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "rear_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "headlights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "brakelights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "dirt_overlay",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "monster_4x4",
+      "skin": "red_dirt",
+      "physics_class": "awd_rally",
+      "display_archetype": "Monster 4x4",
+      "master_canvas": [
+        1024,
+        1024
+      ],
+      "nose_direction": "up",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "files": [
+        {
+          "suffix": "composite",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "body",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "glass",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "shadow",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "front_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "rear_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "headlights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "brakelights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "dirt_overlay",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "neon_gt",
+      "skin": "brisbane_neon_rain",
+      "physics_class": "rwd_sport",
+      "display_archetype": "Neon GT Coupe",
+      "master_canvas": [
+        1024,
+        1024
+      ],
+      "nose_direction": "up",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "files": [
+        {
+          "suffix": "composite",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "body",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "glass",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "shadow",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "front_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "rear_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "headlights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "brakelights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "wet_neon_overlay",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "neon_hot_hatch",
+      "skin": "brisbane_neon_rain",
+      "physics_class": "fwd_hatch",
+      "display_archetype": "Neon Hot Hatch",
+      "master_canvas": [
+        1024,
+        1024
+      ],
+      "nose_direction": "up",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "files": [
+        {
+          "suffix": "composite",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "body",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "glass",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "shadow",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "front_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "rear_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "headlights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "brakelights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "wet_neon_overlay",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": false
+        }
+      ]
+    },
+    {
+      "id": "neon_awd",
+      "skin": "brisbane_neon_rain",
+      "physics_class": "awd_rally",
+      "display_archetype": "Neon AWD Street Weapon",
+      "master_canvas": [
+        1024,
+        1024
+      ],
+      "nose_direction": "up",
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "files": [
+        {
+          "suffix": "composite",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "body",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "glass",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "shadow",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "front_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "rear_wheel",
+          "format": "png",
+          "size": [
+            256,
+            256
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "headlights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "brakelights",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": true
+        },
+        {
+          "suffix": "wet_neon_overlay",
+          "format": "png",
+          "size": [
+            1024,
+            1024
+          ],
+          "rgba": true,
+          "required": false
+        }
+      ]
+    }
+  ],
+  "shared_ui": {
+    "icons": [
+      {
+        "id": "skin",
+        "filename": "ui_icon_skin.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "course",
+        "filename": "ui_icon_course.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "data",
+        "filename": "ui_icon_data.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "tune",
+        "filename": "ui_icon_tune.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "car",
+        "filename": "ui_icon_car.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "reset",
+        "filename": "ui_icon_reset.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "save",
+        "filename": "ui_icon_save.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "load",
+        "filename": "ui_icon_load.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "delete",
+        "filename": "ui_icon_delete.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "bake",
+        "filename": "ui_icon_bake.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "copy",
+        "filename": "ui_icon_copy.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "close",
+        "filename": "ui_icon_close.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "left",
+        "filename": "ui_icon_left.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "right",
+        "filename": "ui_icon_right.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "throttle",
+        "filename": "ui_icon_throttle.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "brake",
+        "filename": "ui_icon_brake.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "handbrake",
+        "filename": "ui_icon_handbrake.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "ghost",
+        "filename": "ui_icon_ghost.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "rival",
+        "filename": "ui_icon_rival.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "best_lap",
+        "filename": "ui_icon_best_lap.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      },
+      {
+        "id": "sector",
+        "filename": "ui_icon_sector.svg",
+        "master": [
+          128,
+          128
+        ],
+        "monochrome": true
+      }
+    ],
+    "raster_optional": [
+      {
+        "id": "countdown_frame",
+        "filename": "ui_countdown_frame.png",
+        "size": [
+          512,
+          512
+        ],
+        "rgba": true
+      },
+      {
+        "id": "finish_frame",
+        "filename": "ui_finish_frame.png",
+        "size": [
+          1024,
+          256
+        ],
+        "rgba": true
+      },
+      {
+        "id": "ghost_glow",
+        "filename": "ui_ghost_glow.png",
+        "size": [
+          256,
+          256
+        ],
+        "rgba": true
+      }
+    ],
+    "code_drawn": [
+      "hud_panels",
+      "buttons",
+      "sliders",
+      "borders",
+      "touch_hit_areas"
+    ]
+  },
+  "skins": {
+    "red_dirt": {
+      "environment": [
+        {
+          "id": "surface_packed",
+          "filename": "rd_surface_packed.png",
+          "size": [
+            1024,
+            1024
+          ],
+          "role": "tile",
+          "rgba": true
+        },
+        {
+          "id": "surface_loose",
+          "filename": "rd_surface_loose.png",
+          "size": [
+            1024,
+            1024
+          ],
+          "role": "tile",
+          "rgba": true
+        },
+        {
+          "id": "rut_overlay",
+          "filename": "rd_rut_overlay.png",
+          "size": [
+            1024,
+            1024
+          ],
+          "role": "overlay",
+          "rgba": true
+        },
+        {
+          "id": "scrub_a",
+          "filename": "rd_scrub_a.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "scrub_b",
+          "filename": "rd_scrub_b.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "scrub_c",
+          "filename": "rd_scrub_c.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "rock_a",
+          "filename": "rd_rock_a.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "rock_b",
+          "filename": "rd_rock_b.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "rock_c",
+          "filename": "rd_rock_c.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "fence_post",
+          "filename": "rd_fence_post.png",
+          "size": [
+            128,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "corrugated_fence",
+          "filename": "rd_corrugated_fence.png",
+          "size": [
+            512,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "tyre_stack",
+          "filename": "rd_barrier_tyre_stack.png",
+          "size": [
+            512,
+            256
+          ],
+          "role": "barrier",
+          "rgba": true
+        },
+        {
+          "id": "steel_barrier",
+          "filename": "rd_barrier_steel.png",
+          "size": [
+            512,
+            256
+          ],
+          "role": "barrier",
+          "rgba": true
+        },
+        {
+          "id": "event_cone",
+          "filename": "rd_event_cone.png",
+          "size": [
+            128,
+            128
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "barrel",
+          "filename": "rd_barrel.png",
+          "size": [
+            128,
+            128
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "shed",
+          "filename": "rd_shed.png",
+          "size": [
+            512,
+            512
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "telegraph_pole",
+          "filename": "rd_telegraph_pole.png",
+          "size": [
+            256,
+            512
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "event_sign",
+          "filename": "rd_event_sign.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "start_finish",
+          "filename": "rd_start_finish.png",
+          "size": [
+            512,
+            128
+          ],
+          "role": "track_ui",
+          "rgba": true
+        },
+        {
+          "id": "checkpoint",
+          "filename": "rd_checkpoint.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "track_ui",
+          "rgba": true
+        },
+        {
+          "id": "dust_soft",
+          "filename": "rd_vfx_dust_soft.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "vfx",
+          "rgba": true
+        },
+        {
+          "id": "dust_grit",
+          "filename": "rd_vfx_dust_grit.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "vfx",
+          "rgba": true
+        }
+      ],
+      "palette": {
+        "iron_red": "#A94D2F",
+        "dark_rust": "#74301F",
+        "ochre": "#C76A43",
+        "dust_tan": "#E1AA72",
+        "charcoal_brown": "#3C211A",
+        "faded_cream": "#F2E0C3",
+        "scrub_olive": "#7F7541",
+        "accent": "#F28A42",
+        "secondary": "#F3C776"
+      }
+    },
+    "brisbane_neon_rain": {
+      "environment": [
+        {
+          "id": "surface_wet",
+          "filename": "bnr_surface_wet.png",
+          "size": [
+            1024,
+            1024
+          ],
+          "role": "tile",
+          "rgba": true
+        },
+        {
+          "id": "surface_dark_wet",
+          "filename": "bnr_surface_dark_wet.png",
+          "size": [
+            1024,
+            1024
+          ],
+          "role": "tile",
+          "rgba": true
+        },
+        {
+          "id": "reflection_cyan",
+          "filename": "bnr_reflection_cyan.png",
+          "size": [
+            1024,
+            512
+          ],
+          "role": "overlay",
+          "rgba": true
+        },
+        {
+          "id": "reflection_magenta",
+          "filename": "bnr_reflection_magenta.png",
+          "size": [
+            1024,
+            512
+          ],
+          "role": "overlay",
+          "rgba": true
+        },
+        {
+          "id": "puddle_a",
+          "filename": "bnr_puddle_a.png",
+          "size": [
+            512,
+            512
+          ],
+          "role": "overlay",
+          "rgba": true
+        },
+        {
+          "id": "puddle_b",
+          "filename": "bnr_puddle_b.png",
+          "size": [
+            512,
+            512
+          ],
+          "role": "overlay",
+          "rgba": true
+        },
+        {
+          "id": "puddle_c",
+          "filename": "bnr_puddle_c.png",
+          "size": [
+            512,
+            512
+          ],
+          "role": "overlay",
+          "rgba": true
+        },
+        {
+          "id": "lane_solid",
+          "filename": "bnr_lane_solid.png",
+          "size": [
+            1024,
+            128
+          ],
+          "role": "track",
+          "rgba": true
+        },
+        {
+          "id": "lane_broken",
+          "filename": "bnr_lane_broken.png",
+          "size": [
+            1024,
+            128
+          ],
+          "role": "track",
+          "rgba": true
+        },
+        {
+          "id": "road_stud",
+          "filename": "bnr_road_stud.png",
+          "size": [
+            128,
+            128
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "neon_barrier",
+          "filename": "bnr_barrier_neon.png",
+          "size": [
+            512,
+            256
+          ],
+          "role": "barrier",
+          "rgba": true
+        },
+        {
+          "id": "concrete_barrier",
+          "filename": "bnr_barrier_concrete.png",
+          "size": [
+            512,
+            256
+          ],
+          "role": "barrier",
+          "rgba": true
+        },
+        {
+          "id": "railing",
+          "filename": "bnr_railing.png",
+          "size": [
+            512,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "bollard",
+          "filename": "bnr_bollard.png",
+          "size": [
+            128,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "light_pole",
+          "filename": "bnr_light_pole.png",
+          "size": [
+            256,
+            512
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "billboard",
+          "filename": "bnr_billboard.png",
+          "size": [
+            512,
+            256
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "city_block_a",
+          "filename": "bnr_city_block_a.png",
+          "size": [
+            512,
+            512
+          ],
+          "role": "background",
+          "rgba": true
+        },
+        {
+          "id": "city_block_b",
+          "filename": "bnr_city_block_b.png",
+          "size": [
+            512,
+            512
+          ],
+          "role": "background",
+          "rgba": true
+        },
+        {
+          "id": "city_block_c",
+          "filename": "bnr_city_block_c.png",
+          "size": [
+            512,
+            512
+          ],
+          "role": "background",
+          "rgba": true
+        },
+        {
+          "id": "drain",
+          "filename": "bnr_drain.png",
+          "size": [
+            256,
+            128
+          ],
+          "role": "prop",
+          "rgba": true
+        },
+        {
+          "id": "start_finish",
+          "filename": "bnr_start_finish.png",
+          "size": [
+            512,
+            128
+          ],
+          "role": "track_ui",
+          "rgba": true
+        },
+        {
+          "id": "checkpoint",
+          "filename": "bnr_checkpoint.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "track_ui",
+          "rgba": true
+        },
+        {
+          "id": "spray_soft",
+          "filename": "bnr_vfx_spray_soft.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "vfx",
+          "rgba": true
+        },
+        {
+          "id": "splash",
+          "filename": "bnr_vfx_splash.png",
+          "size": [
+            256,
+            256
+          ],
+          "role": "vfx",
+          "rgba": true
+        }
+      ],
+      "palette": {
+        "asphalt": "#121923",
+        "deep_asphalt": "#090D14",
+        "city_black": "#05070D",
+        "structure": "#5A6D7D",
+        "cyan": "#34D8FF",
+        "pale_cyan": "#7BDCFF",
+        "magenta": "#FF3EBF",
+        "wet_highlight": "#D7F6FF"
+      }
+    }
+  },
+  "review_sizes_vehicle_px": [
+    256,
+    128,
+    96,
+    72
+  ],
+  "required_course_compatibility": [
+    "round",
+    "figure_eight"
+  ],
+  "deferred": [
+    "damage_deformation",
+    "livery_editor",
+    "3d_models",
+    "licensed_cars",
+    "bridge_figure_eight"
+  ]
+}

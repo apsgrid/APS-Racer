@@ -223,6 +223,29 @@ The project uses GDScript and Godot's Compatibility renderer so Web and Android 
 
 This separation is intentional preparation for future map-derived tracks: a road/path source can eventually generate track geometry while the player independently chooses a visual/environment skin.
 
+## Art production contract
+
+The v0.6.0 art pass is specified under `art/`.
+
+Key rule: vehicle appearance is skin-specific while handling classes remain shared.
+
+- Red Dirt: RWD SPORT -> Desert Prerunner; FWD HATCH -> Baja Compact; AWD RALLY -> Monster 4x4
+- Brisbane Neon Rain: RWD SPORT -> Neon GT Coupe; FWD HATCH -> Neon Hot Hatch; AWD RALLY -> Neon AWD Street Weapon
+
+The production manifest currently defines 124 runtime art files: 115 required and 9 optional.
+
+Use:
+
+    py tools/validate_art_assets.py --allow-missing
+
+during production, then remove `--allow-missing` for final asset validation.
+
+See:
+- `art/ART_BIBLE.md`
+- `art/GENERATION_BRIEFS.md`
+- `art/INTEGRATION_CONTRACT.md`
+- `art/asset_manifest.json`
+
 ## Next gameplay milestones
 
 1. Tune the three cars by feel on keyboard/gamepad/touch and bake the preferred baselines.
